@@ -1,0 +1,8 @@
+{
+  "name": "Poseidon Zero",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular",
+  "id": "1bcc66bc"
+}
