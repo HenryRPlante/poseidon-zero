@@ -8,6 +8,7 @@ import { Component } from '@angular/core';
 })
 export class Tab3Page {
 
-  constructor() {}
+  equation = 'y = 0.97x + 0.30';
+  rSquared = '0.94';
 
 }

@@ -1,17 +1,49 @@
-<ion-header [translucent]="true">
+<ion-header>
   <ion-toolbar>
-    <ion-title>
-      Tab 1
-    </ion-title>
+    <ion-title>Dashboard</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 1</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content class="ion-padding">
 
-  <app-explore-container name="Tab 1 page"></app-explore-container>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Live Buoy Status</ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-item>
+        <ion-label>Battery</ion-label>
+        <ion-badge color="success">{{ battery }}%</ion-badge>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Signal</ion-label>
+        <ion-badge color="primary">{{ signal }} dBm</ion-badge>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Location</ion-label>
+        <ion-text>
+          {{ latitude }}, {{ longitude }}
+        </ion-text>
+      </ion-item>
+
+      <ion-button expand="block" (click)="refreshData()">
+        Refresh
+      </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Static Map -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Location Map</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <img [src]="mapUrl" alt="Location Map" class="static-map" (error)="onMapLoadError($event)">
+      <p style="font-size: 0.7rem; color: #666; margin-top: 8px; word-break: break-all;">{{ mapUrl }}</p>
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>

@@ -8,6 +8,10 @@ import { Component } from '@angular/core';
 })
 export class Tab2Page {
 
-  constructor() {}
+  selectedSegment = 'live';
+
+  waterTemp = 22.4;
+  turbidity = 3.1;
+  airTemp = 24.8;
 
 }

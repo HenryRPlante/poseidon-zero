@@ -1,17 +1,49 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Tab 2
-    </ion-title>
+    <ion-title>Data</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 2</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="ion-padding">
 
-  <app-explore-container name="Tab 2 page"></app-explore-container>
+  <ion-segment [(ngModel)]="selectedSegment">
+    <ion-segment-button value="live">
+      <ion-label>Live</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="trial1">
+      <ion-label>Trial 1</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="trial2">
+      <ion-label>Trial 2</ion-label>
+    </ion-segment-button>
+    <ion-segment-button value="trial3">
+      <ion-label>Trial 3</ion-label>
+    </ion-segment-button>
+  </ion-segment>
+
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>{{ selectedSegment | titlecase }} Data</ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-list>
+        <ion-item>
+          <ion-label>Water Temperature</ion-label>
+          <ion-note slot="end">{{ waterTemp }} °C</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Turbidity</ion-label>
+          <ion-note slot="end">{{ turbidity }} NTU</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Air Temperature</ion-label>
+          <ion-note slot="end">{{ airTemp }} °C</ion-note>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>
