@@ -1,17 +1,35 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>
-      Tab 3
-    </ion-title>
+    <ion-title>Analysis</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Tab 3</ion-title>
-    </ion-toolbar>
-  </ion-header>
+<ion-content [fullscreen]="true" class="ion-padding">
 
-  <app-explore-container name="Tab 3 page"></app-explore-container>
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Linear Regression</ion-card-title>
+      <ion-card-subtitle>Buoy Sensor Data</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-list>
+        <ion-item>
+          <ion-label>Equation</ion-label>
+          <ion-note slot="end">{{ equation }}</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>R² Value</ion-label>
+          <ion-note slot="end">{{ rSquared }}</ion-note>
+        </ion-item>
+      </ion-list>
+
+      <p class="analysis-text">
+        The buoy data demonstrates strong agreement with handheld sensor
+        measurements under controlled conditions.
+      </p>
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>
