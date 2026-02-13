@@ -6,12 +6,35 @@
 
 <ion-content class="ion-padding">
 
+  <!-- Device Selection -->
+  <ion-card *ngIf="devices.length > 0">
+    <ion-card-header>
+      <ion-card-title>Select Device</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-select [(ngModel)]="selectedDevice" (ionChange)="selectDevice($event.detail.value)">
+        <ion-select-option *ngFor="let device of devices" [value]="device">
+          {{ device.name }} - {{ device.location.name }}
+        </ion-select-option>
+      </ion-select>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Live Buoy Status -->
   <ion-card>
     <ion-card-header>
       <ion-card-title>Live Buoy Status</ion-card-title>
+      <ion-card-subtitle *ngIf="selectedDevice">{{ selectedDevice.name }}</ion-card-subtitle>
     </ion-card-header>
 
     <ion-card-content>
+      <ion-item>
+        <ion-label>Status</ion-label>
+        <ion-badge [color]="deviceStatus === 'online' ? 'success' : 'danger'">
+          {{ deviceStatus }}
+        </ion-badge>
+      </ion-item>
+
       <ion-item>
         <ion-label>Battery</ion-label>
         <ion-badge color="success">{{ battery }}%</ion-badge>
@@ -29,9 +52,40 @@
         </ion-text>
       </ion-item>
 
-      <ion-button expand="block" (click)="refreshData()">
-        Refresh
+      <ion-button expand="block" (click)="refreshData()" [disabled]="isLoading">
+        <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
+        {{ isLoading ? 'Loading...' : 'Refresh' }}
       </ion-button>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Current Sensor Readings -->
+  <ion-card *ngIf="currentReading">
+    <ion-card-header>
+      <ion-card-title>Current Sensor Readings</ion-card-title>
+      <ion-card-subtitle>{{ currentReading.timestamp | date: 'short' }}</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-item>
+        <ion-label>TDS (Total Dissolved Solids)</ion-label>
+        <ion-note slot="end">{{ currentReading.tds }} ppm</ion-note>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>Water Temperature</ion-label>
+        <ion-note slot="end">{{ currentReading.temperature }}°C</ion-note>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>EC (Electrical Conductivity)</ion-label>
+        <ion-note slot="end">{{ currentReading.ec }} mS/cm</ion-note>
+      </ion-item>
+
+      <ion-item>
+        <ion-label>pH Level</ion-label>
+        <ion-note slot="end">{{ currentReading.ph }}</ion-note>
+      </ion-item>
     </ion-card-content>
   </ion-card>
 

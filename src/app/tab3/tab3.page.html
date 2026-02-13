@@ -6,29 +6,162 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
+  <!-- Trial Selection -->
+  <ion-card *ngIf="trials.length > 0">
+    <ion-card-header>
+      <ion-card-title>Select Trial for Analysis</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-select [(ngModel)]="selectedTrial" (ionChange)="selectTrial($event.detail.value)">
+        <ion-select-option *ngFor="let trial of trials" [value]="trial">
+          {{ trial.trialName }} - {{ trial.startTime | date: 'short' }}
+        </ion-select-option>
+      </ion-select>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Sensor Status Overview -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Linear Regression</ion-card-title>
-      <ion-card-subtitle>Buoy Sensor Data</ion-card-subtitle>
+      <ion-card-title>Sensor Status Overview</ion-card-title>
     </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="readingsHistory"
+          [currentReading]="selectedTrial ? selectedTrial.readings[selectedTrial.readings.length - 1] : null"
+          [chartType]="'radar'">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <p class="sidebar-label">Device Health</p>
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">Temperature</span><span class="primary-value">{{ avgTemperature | number: '1.1-1' }}°C</span></div>
+          <div class="primary-row"><span class="primary-label">TDS</span><span class="primary-value">{{ avgTds | number: '1.0-0' }} ppm</span></div>
+          <div class="primary-row"><span class="primary-label">EC</span><span class="primary-value">{{ avgEc | number: '1.2-2' }} mS/cm</span></div>
+          <div class="primary-row"><span class="primary-label">pH</span><span class="primary-value">{{ avgPh | number: '1.1-1' }}</span></div>
+          <div class="primary-row"><span class="primary-label">Battery</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.batteryLevel || 0 }}%</span></div>
+          <div class="primary-row"><span class="primary-label">Signal</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.signalStrength || 0 }} dBm</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
 
+  <!-- Temperature Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Temperature Trend</ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'temperature'">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">Temp</span><span class="primary-value">{{ avgTemperature | number: '1.2-2' }}°C</span></div>
+          <div class="secondary-row"><span class="secondary-label">Min</span><span class="secondary-value">{{ minTemperature | number: '1.2-2' }}°C</span></div>
+          <div class="secondary-row"><span class="secondary-label">Max</span><span class="secondary-value">{{ maxTemperature | number: '1.2-2' }}°C</span></div>
+          <div class="secondary-row"><span class="secondary-label">Range</span><span class="secondary-value">{{ (maxTemperature - minTemperature) | number: '1.2-2' }}°C</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- TDS Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>TDS Trend</ion-card-title>
+      <ion-card-subtitle>Total Dissolved Solids</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'tds'">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">TDS</span><span class="primary-value">{{ avgTds | number: '1.2-2' }} ppm</span></div>
+          <div class="secondary-row"><span class="secondary-label">Min</span><span class="secondary-value">{{ minTds | number: '1.2-2' }} ppm</span></div>
+          <div class="secondary-row"><span class="secondary-label">Max</span><span class="secondary-value">{{ maxTds | number: '1.2-2' }} ppm</span></div>
+          <div class="secondary-row"><span class="secondary-label">Range</span><span class="secondary-value">{{ (maxTds - minTds) | number: '1.2-2' }} ppm</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- EC Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Electrical Conductivity Trend</ion-card-title>
+      <ion-card-subtitle>Water Conductivity</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'ec'">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">EC</span><span class="primary-value">{{ avgEc | number: '1.3-3' }} mS/cm</span></div>
+          <div class="secondary-row"><span class="secondary-label">Last</span><span class="secondary-value">{{ (readingsHistory[readingsHistory.length - 1]?.ec || 0) | number: '1.3-3' }} mS/cm</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- pH Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>pH Level Trend</ion-card-title>
+    </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'ph'">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">pH</span><span class="primary-value">{{ avgPh | number: '1.2-2' }}</span></div>
+          <div class="secondary-row"><span class="secondary-label">Min</span><span class="secondary-value">{{ minPh | number: '1.2-2' }}</span></div>
+          <div class="secondary-row"><span class="secondary-label">Max</span><span class="secondary-value">{{ maxPh | number: '1.2-2' }}</span></div>
+          <div class="secondary-row"><span class="secondary-label">Optimal</span><span class="secondary-value">6.5 - 7.5</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Multi-Sensor Comparison -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>All Sensors Comparison</ion-card-title>
+      <ion-card-subtitle>Normalized values (0-100%)</ion-card-subtitle>
+    </ion-card-header>
     <ion-card-content>
-      <ion-list>
-        <ion-item>
-          <ion-label>Equation</ion-label>
-          <ion-note slot="end">{{ equation }}</ion-note>
-        </ion-item>
+      <app-sensor-chart 
+        [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+        [chartType]="'multi'">
+      </app-sensor-chart>
+    </ion-card-content>
+  </ion-card>
 
-        <ion-item>
-          <ion-label>R² Value</ion-label>
-          <ion-note slot="end">{{ rSquared }}</ion-note>
-        </ion-item>
-      </ion-list>
+  <!-- Regression Analysis removed as requested -->
 
-      <p class="analysis-text">
-        The buoy data demonstrates strong agreement with handheld sensor
-        measurements under controlled conditions.
-      </p>
+  <!-- Export Analysis Report -->
+  <ion-card *ngIf="selectedTrial">
+    <ion-card-content>
+      <ion-button expand="block" (click)="generateReport(selectedTrial)">
+        <ion-icon name="download"></ion-icon>
+        Export Analysis Report
+      </ion-button>
     </ion-card-content>
   </ion-card>
 

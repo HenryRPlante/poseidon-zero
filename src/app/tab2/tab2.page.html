@@ -6,43 +6,166 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
-  <ion-segment [(ngModel)]="selectedSegment">
+  <!-- Dynamic Segment Selection -->
+  <ion-segment [(ngModel)]="selectedSegment" (ionChange)="onSegmentChange($event)">
     <ion-segment-button value="live">
       <ion-label>Live</ion-label>
     </ion-segment-button>
-    <ion-segment-button value="trial1">
-      <ion-label>Trial 1</ion-label>
-    </ion-segment-button>
-    <ion-segment-button value="trial2">
-      <ion-label>Trial 2</ion-label>
-    </ion-segment-button>
-    <ion-segment-button value="trial3">
-      <ion-label>Trial 3</ion-label>
+    <ion-segment-button *ngFor="let trial of trials" [value]="trial.trialId">
+      <ion-label>{{ trial.trialName }}</ion-label>
     </ion-segment-button>
   </ion-segment>
 
+  <!-- Sensor Data Card -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>{{ selectedSegment | titlecase }} Data</ion-card-title>
+      <ion-card-title>{{ selectedSegment === 'live' ? 'Live' : selectedTrial?.trialName }} Data</ion-card-title>
+      <ion-card-subtitle *ngIf="selectedTrial">{{ selectedTrial.startTime | date: 'short' }}</ion-card-subtitle>
     </ion-card-header>
 
     <ion-card-content>
       <ion-list>
         <ion-item>
           <ion-label>Water Temperature</ion-label>
-          <ion-note slot="end">{{ waterTemp }} °C</ion-note>
+          <ion-note slot="end">{{ waterTemp }}°C</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>TDS (Total Dissolved Solids)</ion-label>
+          <ion-note slot="end">{{ tds }} ppm</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>EC (Electrical Conductivity)</ion-label>
+          <ion-note slot="end">{{ ec }} mS/cm</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>pH Level</ion-label>
+          <ion-note slot="end">{{ ph }}</ion-note>
         </ion-item>
 
         <ion-item>
           <ion-label>Turbidity</ion-label>
           <ion-note slot="end">{{ turbidity }} NTU</ion-note>
         </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
 
-        <ion-item>
-          <ion-label>Air Temperature</ion-label>
-          <ion-note slot="end">{{ airTemp }} °C</ion-note>
+  <!-- Charts Section -->
+  <ion-card *ngIf="readingsHistory.length > 0 || selectedSegment !== 'live'">
+    <ion-card-header>
+      <ion-card-title>Sensor Trends</ion-card-title>
+      <ion-card-subtitle>Historical data visualization</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <!-- Temperature Chart -->
+      <div class="chart-section">
+        <h3>Temperature Trend</h3>
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'temperature'">
+        </app-sensor-chart>
+      </div>
+
+      <!-- TDS Chart -->
+      <div class="chart-section">
+        <h3>TDS (Total Dissolved Solids) Trend</h3>
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'tds'">
+        </app-sensor-chart>
+      </div>
+
+      <!-- EC Chart -->
+      <div class="chart-section">
+        <h3>Electrical Conductivity Trend</h3>
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'ec'">
+        </app-sensor-chart>
+      </div>
+
+      <!-- pH Chart -->
+      <div class="chart-section">
+        <h3>pH Level Trend</h3>
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'ph'">
+        </app-sensor-chart>
+      </div>
+
+      <!-- Multi-sensor Comparison -->
+      <div class="chart-section">
+        <h3>All Sensors - Normalized Comparison</h3>
+        <app-sensor-chart 
+          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
+          [chartType]="'multi'">
+        </app-sensor-chart>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Mock Data Notice -->
+  <ion-card *ngIf="readingsHistory.length === 0 && selectedSegment === 'live'">
+    <ion-card-header>
+      <ion-card-title>Sample Charts</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <p>Showing mock sensor data. Charts will update with real data once your Arduino device connects.</p>
+      <p><strong>Note:</strong> Polling interval is set to every 5 minutes to conserve battery on remote devices.</p>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Readings History (Live Tab Only) -->
+  <ion-card *ngIf="selectedSegment === 'live' && readingsHistory.length > 0">
+    <ion-card-header>
+      <ion-card-title>Recent Readings History</ion-card-title>
+      <ion-card-subtitle>Last {{ readingsHistory.length }} readings</ion-card-subtitle>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-list>
+        <ion-item *ngFor="let reading of readingsHistory.slice(-5)">
+          <ion-label>
+            <p>{{ reading.timestamp | date: 'short' }}</p>
+            <p>TDS: {{ reading.tds }} ppm | Temp: {{ reading.temperature }}°C | EC: {{ reading.ec }} mS/cm | pH: {{ reading.ph }}</p>
+          </ion-label>
         </ion-item>
       </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Trial Data Summary -->
+  <ion-card *ngIf="selectedTrial && selectedTrial.readings.length > 0">
+    <ion-card-header>
+      <ion-card-title>Trial Summary</ion-card-title>
+    </ion-card-header>
+
+    <ion-card-content>
+      <ion-list>
+        <ion-item>
+          <ion-label>Total Readings</ion-label>
+          <ion-note slot="end">{{ selectedTrial.readings.length }}</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Duration</ion-label>
+          <ion-note slot="end">{{ (selectedTrial.endTime.getTime() - selectedTrial.startTime.getTime()) / 1000 | number: '1.0-0' }} seconds</ion-note>
+        </ion-item>
+
+        <ion-item>
+          <ion-label>Location</ion-label>
+          <ion-note slot="end">{{ selectedTrial.location }}</ion-note>
+        </ion-item>
+      </ion-list>
+
+      <ion-button expand="block" (click)="exportTrialData(selectedTrial)">
+        <ion-icon name="download"></ion-icon>
+        Export as CSV
+      </ion-button>
     </ion-card-content>
   </ion-card>
 
