@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
+import { FakeBuoyService } from '../fake-sensor-data/fake-buoy.service';
+import { HttpClient } from '@angular/common/http';
 import { SensorReading, HistoricalData } from '../models/sensor-data.model';
-import { Subject } from 'rxjs';
+import { Subject, interval } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
@@ -13,6 +15,12 @@ import { takeUntil } from 'rxjs/operators';
 export class Tab3Page implements OnInit, OnDestroy {
 
   selectedSegment = 'live';
+  showOptimalRanges = {
+    temperature: true,
+    tds: true,
+    ec: true,
+    ph: true
+  };
 
   // Analysis data
   trials: HistoricalData[] = [];
@@ -35,12 +43,17 @@ export class Tab3Page implements OnInit, OnDestroy {
   maxPh = 0;
 
   private destroy$ = new Subject<void>();
+  currentPh: number | null = null;
 
-  constructor(private sensorDataService: SensorDataService) {}
+  constructor(
+    private sensorDataService: SensorDataService,
+    private fakeBuoyService: FakeBuoyService
+    , private http: HttpClient
+  ) {}
 
   ngOnInit() {
-    // Subscribe to readings history
-    this.sensorDataService.readingsHistory$
+    // Subscribe to fake buoy readings (using mock data for demo)
+    this.fakeBuoyService.readingsHistory$
       .pipe(takeUntil(this.destroy$))
       .subscribe(readings => {
         this.readingsHistory = readings;
@@ -49,17 +62,44 @@ export class Tab3Page implements OnInit, OnDestroy {
         }
       });
 
-    // Subscribe to trial data
+    // Subscribe to trial data from real sensor service
     this.sensorDataService.historicalData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(trials => {
         this.trials = trials;
       });
+
+    // Start the fake buoy auto-update every 5 minutes
+    this.fakeBuoyService.startAutoUpdate();
+
+    // Poll local receiver for forwarded pH (every 2s)
+    interval(2000)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        this.http.get<any>('http://localhost:5000/ph/last').subscribe({
+          next: (data) => {
+            if (data && data.ph !== undefined) {
+              this.currentPh = Number(data.ph);
+            }
+          },
+          error: () => {
+            // Ignore errors (receiver may be offline)
+          }
+        });
+      });
   }
 
   ngOnDestroy() {
+    this.fakeBuoyService.stopAutoUpdate();
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  /**
+   * Toggle visibility of optimal range for a specific measurement
+   */
+  toggleOptimalRange(measurement: keyof typeof this.showOptimalRanges) {
+    this.showOptimalRanges[measurement] = !this.showOptimalRanges[measurement];
   }
 
   /**

@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ChartConfiguration, Chart } from 'chart.js';
+import { ChartConfiguration, Chart, Plugin } from 'chart.js';
 import { SensorReading } from '../models/sensor-data.model';
 
 @Injectable({
@@ -10,13 +10,37 @@ export class ChartService {
   constructor() {}
 
   /**
+   * Create plugin to draw optimal range background
+   */
+  private createOptimalRangePlugin(min: number, max: number): Plugin {
+    return {
+      id: 'optimalRangeBackground',
+      afterDatasetsDraw(chart) {
+        const ctx = chart.ctx;
+        const yScale = chart.scales['y'];
+        const xScale = chart.scales['x'];
+
+        if (!yScale || !xScale) return;
+
+        const yMin = yScale.getPixelForValue(min);
+        const yMax = yScale.getPixelForValue(max);
+        const xStart = xScale.left;
+        const xEnd = xScale.right;
+
+        ctx.fillStyle = 'rgba(128, 128, 128, 0.15)';
+        ctx.fillRect(xStart, yMax, xEnd - xStart, yMin - yMax);
+      }
+    };
+  }
+
+  /**
    * Generate temperature trend chart configuration
    */
-  getTemperatureChartConfig(readings: SensorReading[]): ChartConfiguration {
+  getTemperatureChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
     const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
     const temperatures = readings.map(r => r.temperature);
 
-    return {
+    const config: any = {
       type: 'line',
       data: {
         labels: timestamps,
@@ -52,7 +76,8 @@ export class ChartService {
         },
         scales: {
           y: {
-            beginAtZero: false,
+            min: 0,
+            max: 30,
             title: {
               display: true,
               text: 'Temperature (°C)'
@@ -67,6 +92,12 @@ export class ChartService {
         }
       }
     };
+
+    if (showOptimalRange) {
+      config.plugins = [this.createOptimalRangePlugin(20, 25)];
+    }
+
+    return config;
   }
 
   // Regression chart removed per user request
@@ -74,11 +105,11 @@ export class ChartService {
   /**
    * Generate TDS trend chart configuration
    */
-  getTdsChartConfig(readings: SensorReading[]): ChartConfiguration {
+  getTdsChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
     const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
     const tdsList = readings.map(r => r.tds);
 
-    return {
+    const config: any = {
       type: 'line',
       data: {
         labels: timestamps,
@@ -114,7 +145,8 @@ export class ChartService {
         },
         scales: {
           y: {
-            beginAtZero: true,
+            min: 0,
+            max: 1500,
             title: {
               display: true,
               text: 'TDS (ppm)'
@@ -129,6 +161,12 @@ export class ChartService {
         }
       }
     };
+
+    if (showOptimalRange) {
+      config.plugins = [this.createOptimalRangePlugin(500, 1000)];
+    }
+
+    return config;
   }
 
   /**
@@ -226,11 +264,11 @@ export class ChartService {
   /**
    * Generate pH trend chart configuration
    */
-  getPhChartConfig(readings: SensorReading[]): ChartConfiguration {
+  getPhChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
     const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
     const phValues = readings.map(r => r.ph);
 
-    return {
+    const config: any = {
       type: 'line',
       data: {
         labels: timestamps,
@@ -283,16 +321,22 @@ export class ChartService {
         }
       }
     };
+
+    if (showOptimalRange) {
+      config.plugins = [this.createOptimalRangePlugin(6.5, 7.5)];
+    }
+
+    return config;
   }
 
   /**
    * Generate EC trend chart configuration
    */
-  getEcChartConfig(readings: SensorReading[]): ChartConfiguration {
+  getEcChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
     const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
     const ecValues = readings.map(r => r.ec);
 
-    return {
+    const config: any = {
       type: 'line',
       data: {
         labels: timestamps,
@@ -328,7 +372,8 @@ export class ChartService {
         },
         scales: {
           y: {
-            beginAtZero: true,
+            min: 0,
+            max: 2.5,
             title: {
               display: true,
               text: 'EC (mS/cm)'
@@ -343,6 +388,12 @@ export class ChartService {
         }
       }
     };
+
+    if (showOptimalRange) {
+      config.plugins = [this.createOptimalRangePlugin(1.0, 2.0)];
+    }
+
+    return config;
   }
 
   /**

@@ -155,6 +155,24 @@ export class SensorDataService {
   }
 
   /**
+   * Refresh readings with new mock data (for demo purposes)
+   */
+  public refreshReadings(): void {
+    const newReading: SensorReading = {
+      timestamp: new Date(),
+      tds: 400 + Math.random() * 200,
+      temperature: 20 + Math.random() * 8,
+      ec: 0.7 + Math.random() * 0.8,
+      ph: 6.8 + Math.random() * 0.6,
+      signalStrength: -80 + Math.random() * 20,
+      batteryLevel: 80 + Math.random() * 15
+    };
+    
+    this.addToReadingsHistory(newReading);
+    this.currentReadingSubject.next(newReading);
+  }
+
+  /**
    * Add reading to history (maintains a maximum size)
    */
   private addToReadingsHistory(reading: SensorReading): void {

@@ -2,20 +2,119 @@ ion-segment {
   margin-bottom: 16px;
 }
 
-// Chart styling
-.chart-section {
-  margin: 20px 0;
+// Measurement items styling
+.measurement-item {
+  margin: 24px 0;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
 
-  h3 {
-    font-size: 16px;
-    font-weight: 600;
-    margin: 16px 0 12px 0;
-    color: #333;
+  &:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
   }
 
-  app-sensor-chart {
-    display: block;
-    margin-bottom: 20px;
+  .measurement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+
+    ion-label {
+      font-size: 16px;
+      font-weight: 500;
+      color: #333;
+    }
+
+    ion-note {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2196F3;
+    }
+  }
+}
+
+// Optimal range container and bars
+.optimal-range-container {
+  margin-top: 12px;
+}
+
+.optimal-range-bar {
+  position: relative;
+  height: 32px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid #ddd;
+  margin-bottom: 8px;
+
+  // Optimal zone - light gray translucent rectangle
+  .optimal-zone {
+    position: absolute;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 0.15);
+    border-left: 2px solid rgba(76, 175, 80, 0.5);
+    border-right: 2px solid rgba(76, 175, 80, 0.5);
+  }
+
+  // Current value indicator - vertical line
+  .current-indicator {
+    position: absolute;
+    top: 0;
+    left: var(--current-value, 0%);
+    width: 3px;
+    height: 100%;
+    background-color: #2196F3;
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  // Color-coded bars for different measurements
+  &.temperature {
+    background: linear-gradient(to right, rgba(255, 152, 0, 0.05), rgba(244, 67, 54, 0.05));
+  }
+
+  &.tds {
+    background: linear-gradient(to right, rgba(76, 175, 80, 0.05), rgba(255, 193, 7, 0.05));
+  }
+
+  &.ec {
+    background: linear-gradient(to right, rgba(33, 150, 243, 0.05), rgba(103, 58, 183, 0.05));
+  }
+
+  &.ph {
+    background: linear-gradient(to right, rgba(244, 67, 54, 0.05), rgba(76, 175, 80, 0.05));
+  }
+}
+
+// Range labels
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+  position: relative;
+
+  span {
+    position: relative;
+    z-index: 1;
+
+    &.min {
+      text-align: left;
+    }
+
+    &.optimal {
+      text-align: center;
+      font-weight: 500;
+      color: #4CAF50;
+      flex: 1;
+    }
+
+    &.max {
+      text-align: right;
+    }
   }
 }
 

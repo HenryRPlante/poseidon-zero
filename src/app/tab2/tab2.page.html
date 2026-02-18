@@ -16,7 +16,7 @@
     </ion-segment-button>
   </ion-segment>
 
-  <!-- Sensor Data Card -->
+  <!-- Sensor Data with Optimal Range Bars -->
   <ion-card>
     <ion-card-header>
       <ion-card-title>{{ selectedSegment === 'live' ? 'Live' : selectedTrial?.trialName }} Data</ion-card-title>
@@ -27,91 +27,32 @@
       <ion-list>
         <ion-item>
           <ion-label>Water Temperature</ion-label>
-          <ion-note slot="end">{{ waterTemp }}°C</ion-note>
+          <ion-note slot="end">{{ waterTemp | number: '1.2-2' }}°C</ion-note>
         </ion-item>
-
         <ion-item>
           <ion-label>TDS (Total Dissolved Solids)</ion-label>
-          <ion-note slot="end">{{ tds }} ppm</ion-note>
+          <ion-note slot="end">{{ tds | number: '1.2-2' }} ppm</ion-note>
         </ion-item>
-
         <ion-item>
           <ion-label>EC (Electrical Conductivity)</ion-label>
-          <ion-note slot="end">{{ ec }} mS/cm</ion-note>
+          <ion-note slot="end">{{ ec | number: '1.2-2' }} mS/cm</ion-note>
         </ion-item>
-
         <ion-item>
           <ion-label>pH Level</ion-label>
-          <ion-note slot="end">{{ ph }}</ion-note>
+          <ion-note slot="end">{{ ph | number: '1.2-2' }}</ion-note>
         </ion-item>
-
         <ion-item>
           <ion-label>Turbidity</ion-label>
-          <ion-note slot="end">{{ turbidity }} NTU</ion-note>
+          <ion-note slot="end">{{ turbidity | number: '1.2-2' }} NTU</ion-note>
         </ion-item>
       </ion-list>
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Charts Section -->
-  <ion-card *ngIf="readingsHistory.length > 0 || selectedSegment !== 'live'">
-    <ion-card-header>
-      <ion-card-title>Sensor Trends</ion-card-title>
-      <ion-card-subtitle>Historical data visualization</ion-card-subtitle>
-    </ion-card-header>
-
-    <ion-card-content>
-      <!-- Temperature Chart -->
-      <div class="chart-section">
-        <h3>Temperature Trend</h3>
-        <app-sensor-chart 
-          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
-          [chartType]="'temperature'">
-        </app-sensor-chart>
-      </div>
-
-      <!-- TDS Chart -->
-      <div class="chart-section">
-        <h3>TDS (Total Dissolved Solids) Trend</h3>
-        <app-sensor-chart 
-          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
-          [chartType]="'tds'">
-        </app-sensor-chart>
-      </div>
-
-      <!-- EC Chart -->
-      <div class="chart-section">
-        <h3>Electrical Conductivity Trend</h3>
-        <app-sensor-chart 
-          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
-          [chartType]="'ec'">
-        </app-sensor-chart>
-      </div>
-
-      <!-- pH Chart -->
-      <div class="chart-section">
-        <h3>pH Level Trend</h3>
-        <app-sensor-chart 
-          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
-          [chartType]="'ph'">
-        </app-sensor-chart>
-      </div>
-
-      <!-- Multi-sensor Comparison -->
-      <div class="chart-section">
-        <h3>All Sensors - Normalized Comparison</h3>
-        <app-sensor-chart 
-          [readings]="selectedSegment === 'live' ? readingsHistory : selectedTrial?.readings || []"
-          [chartType]="'multi'">
-        </app-sensor-chart>
-      </div>
     </ion-card-content>
   </ion-card>
 
   <!-- Mock Data Notice -->
   <ion-card *ngIf="readingsHistory.length === 0 && selectedSegment === 'live'">
     <ion-card-header>
-      <ion-card-title>Sample Charts</ion-card-title>
+      <ion-card-title>Data Status</ion-card-title>
     </ion-card-header>
     <ion-card-content>
       <p>Showing mock sensor data. Charts will update with real data once your Arduino device connects.</p>
@@ -131,7 +72,7 @@
         <ion-item *ngFor="let reading of readingsHistory.slice(-5)">
           <ion-label>
             <p>{{ reading.timestamp | date: 'short' }}</p>
-            <p>TDS: {{ reading.tds }} ppm | Temp: {{ reading.temperature }}°C | EC: {{ reading.ec }} mS/cm | pH: {{ reading.ph }}</p>
+            <p>TDS: {{ reading.tds | number: '1.2-2' }} ppm | Temp: {{ reading.temperature | number: '1.2-2' }}°C | EC: {{ reading.ec | number: '1.2-2' }} mS/cm | pH: {{ reading.ph | number: '1.2-2' }}</p>
           </ion-label>
         </ion-item>
       </ion-list>
