@@ -6,29 +6,192 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
+  <!-- Trial Selection -->
+  <ion-card *ngIf="trials.length > 0">
+    <ion-card-header>
+      <ion-card-title>Select Trial for Analysis</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-select [(ngModel)]="selectedTrial" (ionChange)="selectTrial($event.detail.value)">
+        <ion-select-option *ngFor="let trial of trials" [value]="trial">
+          {{ trial.trialName }} - {{ trial.startTime | date: 'short' }}
+        </ion-select-option>
+      </ion-select>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Sensor Status Overview -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Linear Regression</ion-card-title>
-      <ion-card-subtitle>Buoy Sensor Data</ion-card-subtitle>
+      <ion-card-title>Sensor Status Overview</ion-card-title>
     </ion-card-header>
+    <ion-card-content class="chart-data-grid">
+      <div style="margin-bottom:8px">
+        <ion-badge color="primary">Live pH: </ion-badge>
+        <span style="font-weight:600; margin-left:8px">{{ currentPh !== null ? (currentPh | number:'1.2-2') : '—' }}</span>
+      </div>
+      <div class="chart-container">
+        <app-sensor-chart 
+          [readings]="readingsHistory"
+          [currentReading]="selectedTrial ? selectedTrial.readings[selectedTrial.readings.length - 1] : null"
+          [chartType]="'radar'"
+          [showOptimalRange]="true">
+        </app-sensor-chart>
+      </div>
+      <div class="data-sidebar">
+        <p class="sidebar-label">Device Health</p>
+        <div class="primary-values">
+          <div class="primary-row"><span class="primary-label">Temperature</span><span class="primary-value">{{ avgTemperature | number: '1.2-2' }}°C</span></div>
+          <div class="primary-row"><span class="primary-label">TDS</span><span class="primary-value">{{ avgTds | number: '1.2-2' }} ppm</span></div>
+          <div class="primary-row"><span class="primary-label">EC</span><span class="primary-value">{{ avgEc | number: '1.2-2' }} mS/cm</span></div>
+          <div class="primary-row"><span class="primary-label">pH</span><span class="primary-value">{{ avgPh | number: '1.2-2' }}</span></div>
+          <div class="primary-row"><span class="primary-label">Battery</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.batteryLevel || 0 }}%</span></div>
+          <div class="primary-row"><span class="primary-label">Signal</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.signalStrength || 0 }} dBm</span></div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
 
+  <!-- Temperature Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Temperature Trend</ion-card-title>
+    </ion-card-header>
     <ion-card-content>
-      <ion-list>
-        <ion-item>
-          <ion-label>Equation</ion-label>
-          <ion-note slot="end">{{ equation }}</ion-note>
-        </ion-item>
+      <div class="analysis-stats">
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTemperature | number: '1.2-2' }}°C</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTemperature | number: '1.2-2' }}°C</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTemperature | number: '1.2-2' }}°C</span></div>
+        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTemperature - minTemperature) | number: '1.2-2' }}°C</span></div>
+      </div>
+      
+      <div class="optimal-range-container">
+        <div class="range-header">
+          <ion-button fill="clear" size="small" (click)="toggleOptimalRange('temperature')" class="range-button">
+            <ion-icon slot="icon-only" [name]="'checkmark'" [class.active]="showOptimalRanges.temperature"></ion-icon>
+          </ion-button>
+          <span>Optimal Range: 20 - 25°C</span>
+        </div>
+        <div class="optimal-range-bar temperature" [style.--current-value]="((avgTemperature - 0) / 30 * 100) + '%'">
+          <div class="optimal-zone" [style.left.%]="((20 - 0) / 30 * 100)" [style.width.%]="((25 - 20) / 30 * 100)" *ngIf="showOptimalRanges.temperature"></div>
+          <div class="current-indicator"></div>
+          <div class="indicator-label">{{ avgTemperature | number: '1.2-2' }}°C</div>
+        </div>
+        <div class="range-labels">
+          <span class="min">0°C</span>
+          <span class="max">30°C</span>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
 
-        <ion-item>
-          <ion-label>R² Value</ion-label>
-          <ion-note slot="end">{{ rSquared }}</ion-note>
-        </ion-item>
-      </ion-list>
+  <!-- TDS Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>TDS Trend</ion-card-title>
+      <ion-card-subtitle>Total Dissolved Solids</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="analysis-stats">
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTds | number: '1.2-2' }} ppm</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTds | number: '1.2-2' }} ppm</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTds | number: '1.2-2' }} ppm</span></div>
+        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTds - minTds) | number: '1.2-2' }} ppm</span></div>
+      </div>
+      
+      <div class="optimal-range-container">
+        <div class="range-header">
+          <ion-button fill="clear" size="small" (click)="toggleOptimalRange('tds')" class="range-button">
+            <ion-icon slot="icon-only" [name]="'checkmark'" [class.active]="showOptimalRanges.tds"></ion-icon>
+          </ion-button>
+          <span>Optimal Range: 500 - 1000 ppm</span>
+        </div>
+        <div class="optimal-range-bar tds" [style.--current-value]="((avgTds - 0) / 1500 * 100) + '%'">
+          <div class="optimal-zone" [style.left.%]="((500 - 0) / 1500 * 100)" [style.width.%]="((1000 - 500) / 1500 * 100)" *ngIf="showOptimalRanges.tds"></div>
+          <div class="current-indicator"></div>
+          <div class="indicator-label">{{ avgTds | number: '1.2-2' }} ppm</div>
+        </div>
+        <div class="range-labels">
+          <span class="min">0 ppm</span>
+          <span class="max">1500 ppm</span>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
 
-      <p class="analysis-text">
-        The buoy data demonstrates strong agreement with handheld sensor
-        measurements under controlled conditions.
-      </p>
+  <!-- EC Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>Electrical Conductivity Trend</ion-card-title>
+      <ion-card-subtitle>Water Conductivity</ion-card-subtitle>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="analysis-stats">
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgEc | number: '1.2-2' }} mS/cm</span></div>
+        <div class="stat"><span class="stat-label">Last</span><span class="stat-value">{{ (readingsHistory[readingsHistory.length - 1]?.ec || 0) | number: '1.2-2' }} mS/cm</span></div>
+      </div>
+      
+      <div class="optimal-range-container">
+        <div class="range-header">
+          <ion-button fill="clear" size="small" (click)="toggleOptimalRange('ec')" class="range-button">
+            <ion-icon slot="icon-only" [name]="'checkmark'" [class.active]="showOptimalRanges.ec"></ion-icon>
+          </ion-button>
+          <span>Optimal Range: 1.0 - 2.0 mS/cm</span>
+        </div>
+        <div class="optimal-range-bar ec" [style.--current-value]="((avgEc - 0) / 2.5 * 100) + '%'">
+          <div class="optimal-zone" [style.left.%]="((1.0 - 0) / 2.5 * 100)" [style.width.%]="((2.0 - 1.0) / 2.5 * 100)" *ngIf="showOptimalRanges.ec"></div>
+          <div class="current-indicator"></div>
+          <div class="indicator-label">{{ avgEc | number: '1.2-2' }} mS/cm</div>
+        </div>
+        <div class="range-labels">
+          <span class="min">0 mS/cm</span>
+          <span class="max">2.5 mS/cm</span>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- pH Analysis -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>pH Level Trend</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="analysis-stats">
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgPh | number: '1.2-2' }}</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minPh | number: '1.2-2' }}</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxPh | number: '1.2-2' }}</span></div>
+      </div>
+      
+      <div class="optimal-range-container">
+        <div class="range-header">
+          <ion-button fill="clear" size="small" (click)="toggleOptimalRange('ph')" class="range-button">
+            <ion-icon slot="icon-only" [name]="'checkmark'" [class.active]="showOptimalRanges.ph"></ion-icon>
+          </ion-button>
+          <span>Optimal Range: 6.5 - 7.5</span>
+        </div>
+        <div class="optimal-range-bar ph" [style.--current-value]="((avgPh - 0) / 14 * 100) + '%'">
+          <div class="optimal-zone" [style.left.%]="((6.5 - 0) / 14 * 100)" [style.width.%]="((7.5 - 6.5) / 14 * 100)" *ngIf="showOptimalRanges.ph"></div>
+          <div class="current-indicator"></div>
+          <div class="indicator-label">{{ avgPh | number: '1.2-2' }}</div>
+        </div>
+        <div class="range-labels">
+          <span class="min">0</span>
+          <span class="max">14</span>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Regression Analysis removed as requested -->
+
+  <!-- Export Analysis Report -->
+  <ion-card *ngIf="selectedTrial">
+    <ion-card-content>
+      <ion-button expand="block" (click)="generateReport(selectedTrial)">
+        <ion-icon name="download"></ion-icon>
+        Export Analysis Report
+      </ion-button>
     </ion-card-content>
   </ion-card>
 

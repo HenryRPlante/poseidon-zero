@@ -1,3 +1,332 @@
+.chart-data-grid {
+  display: grid;
+  grid-template-columns: 1fr 220px;
+  gap: 24px;
+  align-items: center;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+.chart-container {
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  app-sensor-chart {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+.data-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  color: #dcdcdc;
+
+  .sidebar-label {
+    font-weight: 700;
+    font-size: 12px;
+    text-transform: uppercase;
+    color: #666;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .stat-name {
+      font-size: 11px;
+      color: #cfcfcf;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
+  }
+
+  .primary-values {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    .primary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+      padding: 6px 8px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 6px;
+    }
+
+    .primary-label {
+      font-size: 12px;
+      color: #cfcfcf;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .primary-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .secondary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 4px 6px;
+    }
+
+    .secondary-label {
+      font-size: 11px;
+      color: #cfcfcf;
+    }
+
+    .secondary-value {
+      font-size: 14px;
+      color: #eee;
+      font-weight: 600;
+    }
+
+    .range-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 6px;
+      
+      .secondary-label {
+        flex: 1;
+      }
+
+      .range-button {
+        --padding-start: 4px;
+        --padding-end: 4px;
+        height: 24px;
+        min-height: 24px;
+        
+        ion-icon {
+          font-size: 16px;
+          color: #999;
+          transition: color 0.2s ease;
+          
+          &.active {
+            color: #4CAF50;
+            font-weight: 700;
+          }
+        }
+      }
+
+      .secondary-value {
+        flex: 1;
+        text-align: right;
+      }
+    }
+  }
+
+  .sidebar-label {
+    font-size: 12px;
+    color: #bdbdbd;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+}
+
+.analysis-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.02);
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+
+    .stat-label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: #2196F3;
+    }
+  }
+}
+
+// Optimal range container and bars
+.optimal-range-container {
+  margin-top: 16px;
+}
+
+.range-header {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  color: #333;
+
+  .range-button {
+    --padding-start: 4px;
+    --padding-end: 4px;
+    height: 24px;
+    min-height: 24px;
+    margin: 0;
+    
+    ion-icon {
+      font-size: 18px;
+      color: #999;
+      transition: color 0.2s ease;
+      
+      &.active {
+        color: #4CAF50;
+        font-weight: 700;
+      }
+    }
+  }
+
+  span {
+    font-size: 15px;
+    font-weight: 500;
+    color: #2196F3;
+  }
+}
+
+.optimal-range-bar {
+  position: relative;
+  height: 40px;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  overflow: visible;
+  border: 1px solid #ddd;
+  margin-bottom: 28px;
+
+  // Optimal zone - light gray translucent rectangle
+  .optimal-zone {
+    position: absolute;
+    height: 100%;
+    background-color: rgba(128, 128, 128, 0.15);
+    border-left: 2px solid rgba(76, 175, 80, 0.5);
+    border-right: 2px solid rgba(76, 175, 80, 0.5);
+    z-index: 1;
+  }
+
+  // Current value indicator - vertical line
+  .current-indicator {
+    position: absolute;
+    top: 0;
+    left: var(--current-value, 0%);
+    width: 3px;
+    height: 100%;
+    background-color: #2196F3;
+    box-shadow: 0 0 6px rgba(33, 150, 243, 0.6);
+    transform: translateX(-50%);
+    z-index: 2;
+  }
+
+  // Label for current value
+  .indicator-label {
+    position: absolute;
+    top: 100%;
+    left: var(--current-value, 0%);
+    transform: translateX(-50%);
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #2196F3;
+    white-space: nowrap;
+    z-index: 3;
+  }
+
+  // Color-coded bars for different measurements
+  &.temperature {
+    background: linear-gradient(to right, rgba(255, 152, 0, 0.05), rgba(244, 67, 54, 0.05));
+  }
+
+  &.tds {
+    background: linear-gradient(to right, rgba(76, 175, 80, 0.05), rgba(255, 193, 7, 0.05));
+  }
+
+  &.ec {
+    background: linear-gradient(to right, rgba(33, 150, 243, 0.05), rgba(103, 58, 183, 0.05));
+  }
+
+  &.ph {
+    background: linear-gradient(to right, rgba(244, 67, 54, 0.05), rgba(76, 175, 80, 0.05));
+  }
+}
+
+// Range labels
+.range-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #666;
+
+  span {
+    position: relative;
+    z-index: 1;
+
+    &.min {
+      text-align: left;
+    }
+
+    &.max {
+      text-align: right;
+    }
+  }
+}
+
+.analysis-description {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: #666;
+  line-height: 1.5;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.chart-description {
+  font-size: 12px;
+  color: #999;
+  margin-top: 12px;
+  line-height: 1.4;
+}
+
 .analysis-text {
   margin-top: 16px;
   font-size: 0.95rem;

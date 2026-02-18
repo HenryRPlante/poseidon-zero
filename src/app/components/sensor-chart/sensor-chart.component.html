@@ -1,0 +1,13 @@
+<div class="sensor-chart-container">
+  <div class="chart-wrapper" *ngIf="chartConfig">
+    <canvas 
+      baseChart
+      [type]="chartConfig.type"
+      [data]="chartConfig.data"
+      [options]="chartConfig.options">
+    </canvas>
+  </div>
+  <div class="no-data" *ngIf="!chartConfig">
+    <p>Loading chart data...</p>
+  </div>
+</div>
