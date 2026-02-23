@@ -1,3 +1,13 @@
+.sensor-detect-strip {
+  width: 95vw;
+  margin: 0 auto 8px auto;
+
+  ion-chip {
+    height: 26px;
+    font-size: 12px;
+  }
+}
+
 .chart-data-grid {
   display: grid;
   grid-template-columns: 1fr 220px;

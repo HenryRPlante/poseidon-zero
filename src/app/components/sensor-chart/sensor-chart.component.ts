@@ -20,7 +20,6 @@ export class SensorChartComponent implements OnInit {
   @Input() showOptimalRange: boolean = true;
 
   chartConfig: ChartConfiguration | null = null;
-  private mockDataGenerated = false;
 
   constructor(private chartService: ChartService) {}
 
@@ -40,10 +39,16 @@ export class SensorChartComponent implements OnInit {
   }
 
   updateChart() {
-    if (this.readings.length === 0 && !this.mockDataGenerated) {
-      // Generate mock data only once
-      this.generateMockChart();
-      this.mockDataGenerated = true;
+    const hasReadings = this.readings.length > 0;
+    const hasCurrentReading = !!this.currentReading;
+
+    if (!hasReadings && this.chartType !== 'radar') {
+      this.chartConfig = null;
+      return;
+    }
+
+    if (this.chartType === 'radar' && !hasCurrentReading) {
+      this.chartConfig = null;
       return;
     }
 
@@ -93,48 +98,6 @@ export class SensorChartComponent implements OnInit {
       case 'ph':
         this.chartConfig = this.chartService.getPhChartConfig(readings, this.showOptimalRange);
         break;
-    }
-  }
-
-  /**
-   * Generate mock data for demonstration when no real data is available
-   */
-  private generateMockChart() {
-    // Generate 10 mock readings spaced 5 minutes apart
-    const mockReadings: SensorReading[] = [];
-    for (let i = 0; i < 10; i++) {
-      mockReadings.push({
-        timestamp: new Date(Date.now() - (10 - i) * 300000),
-        tds: 400 + Math.random() * 100,
-        temperature: 20 + Math.random() * 8,
-        ec: 0.7 + Math.random() * 0.4,
-        ph: 6.8 + Math.random() * 0.6,
-        signalStrength: -80 + Math.random() * 20,
-        batteryLevel: 80 + Math.random() * 15
-      });
-    }
-
-    switch (this.chartType) {
-      case 'temperature':
-        this.chartConfig = this.chartService.getTemperatureChartConfig(mockReadings, this.showOptimalRange);
-        break;
-      case 'tds':
-        this.chartConfig = this.chartService.getTdsChartConfig(mockReadings, this.showOptimalRange);
-        break;
-      case 'ec':
-        this.chartConfig = this.chartService.getEcChartConfig(mockReadings, this.showOptimalRange);
-        break;
-      case 'ph':
-        this.chartConfig = this.chartService.getPhChartConfig(mockReadings, this.showOptimalRange);
-        break;
-      case 'multi':
-        this.chartConfig = this.chartService.getMultiSensorChartConfig(mockReadings);
-        break;
-      case 'radar':
-        this.chartConfig = this.chartService.getRadarChartConfig(mockReadings[0]);
-        break;
-      default:
-        this.chartConfig = this.chartService.getTemperatureChartConfig(mockReadings, this.showOptimalRange);
     }
   }
 }

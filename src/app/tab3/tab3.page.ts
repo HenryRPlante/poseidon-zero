@@ -1,9 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
-import { FakeBuoyService } from '../fake-sensor-data/fake-buoy.service';
-import { HttpClient } from '@angular/common/http';
-import { SensorReading, HistoricalData } from '../models/sensor-data.model';
-import { Subject, interval } from 'rxjs';
+import { SensorReading, HistoricalData, SensorDevice } from '../models/sensor-data.model';
+import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
 @Component({
@@ -26,40 +24,50 @@ export class Tab3Page implements OnInit, OnDestroy {
   trials: HistoricalData[] = [];
   selectedTrial: HistoricalData | null = null;
   readingsHistory: SensorReading[] = [];
+  devices: SensorDevice[] = [];
 
   // Statistics
-  avgTemperature = 0;
-  avgTds = 0;
-  avgEc = 0;
-  avgPh = 0;
+  avgTemperature: number | null = null;
+  avgTds: number | null = null;
+  avgEc: number | null = null;
+  avgPh: number | null = null;
   
-  minTemperature = 0;
-  maxTemperature = 0;
+  minTemperature: number | null = null;
+  maxTemperature: number | null = null;
   
-  minTds = 0;
-  maxTds = 0;
+  minTds: number | null = null;
+  maxTds: number | null = null;
 
-  minPh = 0;
-  maxPh = 0;
+  minPh: number | null = null;
+  maxPh: number | null = null;
 
   private destroy$ = new Subject<void>();
-  currentPh: number | null = null;
 
-  constructor(
-    private sensorDataService: SensorDataService,
-    private fakeBuoyService: FakeBuoyService
-    , private http: HttpClient
-  ) {}
+  get sensorDetectionText(): string {
+    if (this.devices.length === 0) {
+      return 'Detecting sensors...';
+    }
+    return `Connected: ${this.devices.map(device => device.name).join(', ')}`;
+  }
+
+  constructor(private sensorDataService: SensorDataService) {}
 
   ngOnInit() {
-    // Subscribe to fake buoy readings (using mock data for demo)
-    this.fakeBuoyService.readingsHistory$
+    this.sensorDataService.readingsHistory$
       .pipe(takeUntil(this.destroy$))
       .subscribe(readings => {
         this.readingsHistory = readings;
         if (readings.length > 0) {
           this.calculateStatistics(readings);
+        } else {
+          this.clearStatistics();
         }
+      });
+
+    this.sensorDataService.devices$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(devices => {
+        this.devices = devices;
       });
 
     // Subscribe to trial data from real sensor service
@@ -69,29 +77,9 @@ export class Tab3Page implements OnInit, OnDestroy {
         this.trials = trials;
       });
 
-    // Start the fake buoy auto-update every 5 minutes
-    this.fakeBuoyService.startAutoUpdate();
-
-    // Poll local receiver for forwarded pH (every 2s)
-    interval(2000)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(() => {
-        this.http.get<any>('http://localhost:5000/api/sensors/last').subscribe({
-          next: (data) => {
-            const reading = data?.data ?? data;
-            if (reading && reading.ph !== undefined) {
-              this.currentPh = Number(reading.ph);
-            }
-          },
-          error: () => {
-            // Ignore errors (receiver may be offline)
-          }
-        });
-      });
   }
 
   ngOnDestroy() {
-    this.fakeBuoyService.stopAutoUpdate();
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -107,7 +95,10 @@ export class Tab3Page implements OnInit, OnDestroy {
    * Calculate statistics from sensor readings
    */
   calculateStatistics(readings: SensorReading[]) {
-    if (readings.length === 0) return;
+    if (readings.length === 0) {
+      this.clearStatistics();
+      return;
+    }
 
     // Temperature statistics
     const temperatures = readings.map(r => r.temperature);
@@ -134,6 +125,19 @@ export class Tab3Page implements OnInit, OnDestroy {
     // regression analysis removed per request
   }
 
+  private clearStatistics() {
+    this.avgTemperature = null;
+    this.avgTds = null;
+    this.avgEc = null;
+    this.avgPh = null;
+    this.minTemperature = null;
+    this.maxTemperature = null;
+    this.minTds = null;
+    this.maxTds = null;
+    this.minPh = null;
+    this.maxPh = null;
+  }
+
   // regression helper removed
 
   /**
@@ -142,6 +146,13 @@ export class Tab3Page implements OnInit, OnDestroy {
   private calculateAverage(values: number[]): number {
     if (values.length === 0) return 0;
     return values.reduce((a, b) => a + b, 0) / values.length;
+  }
+
+  private formatStat(value: number | null, suffix: string = ''): string {
+    if (value === null || value === undefined) {
+      return '---';
+    }
+    return `${value.toFixed(2)}${suffix}`;
   }
 
   /**
@@ -174,22 +185,22 @@ Location: ${trial.location}
 Date: ${new Date(trial.startTime).toLocaleDateString()}
 
 Temperature Analysis:
-- Average: ${this.avgTemperature.toFixed(2)}°C
-- Min: ${this.minTemperature.toFixed(2)}°C
-- Max: ${this.maxTemperature.toFixed(2)}°C
+- Average: ${this.formatStat(this.avgTemperature, '°C')}
+- Min: ${this.formatStat(this.minTemperature, '°C')}
+- Max: ${this.formatStat(this.maxTemperature, '°C')}
 
 TDS (Total Dissolved Solids) Analysis:
-- Average: ${this.avgTds.toFixed(2)} ppm
-- Min: ${this.minTds.toFixed(2)} ppm
-- Max: ${this.maxTds.toFixed(2)} ppm
+- Average: ${this.formatStat(this.avgTds, ' ppm')}
+- Min: ${this.formatStat(this.minTds, ' ppm')}
+- Max: ${this.formatStat(this.maxTds, ' ppm')}
 
 EC (Electrical Conductivity) Analysis:
-- Average: ${this.avgEc.toFixed(2)} mS/cm
+- Average: ${this.formatStat(this.avgEc, ' mS/cm')}
 
 pH Level Analysis:
-- Average: ${this.avgPh.toFixed(2)}
-- Min: ${this.minPh.toFixed(2)}
-- Max: ${this.maxPh.toFixed(2)}
+- Average: ${this.formatStat(this.avgPh)}
+- Min: ${this.formatStat(this.minPh)}
+- Max: ${this.formatStat(this.maxPh)}
 
   Linear Regression Analysis: removed
     `;

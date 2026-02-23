@@ -6,6 +6,12 @@
 
 <ion-content class="ion-padding">
 
+  <div class="sensor-detect-strip">
+    <ion-chip [color]="devices.length > 0 ? 'success' : 'medium'">
+      <ion-label>{{ sensorDetectionText }}</ion-label>
+    </ion-chip>
+  </div>
+
   <!-- Device Selection -->
   <ion-card *ngIf="devices.length > 0">
     <ion-card-header>
@@ -37,12 +43,12 @@
 
       <ion-item>
         <ion-label>Battery</ion-label>
-        <ion-badge color="success">{{ battery }}%</ion-badge>
+        <ion-badge color="success">{{ battery !== null ? ((battery | number: '1.2-2') + '%') : '---' }}</ion-badge>
       </ion-item>
 
       <ion-item>
         <ion-label>Signal</ion-label>
-        <ion-badge color="primary">{{ signal }} dBm</ion-badge>
+        <ion-badge color="primary">{{ signal !== null ? ((signal | number: '1.2-2') + ' dBm') : '---' }}</ion-badge>
       </ion-item>
 
       <ion-item>
@@ -89,14 +95,13 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- Static Map -->
+  <!-- Location Map -->
   <ion-card>
     <ion-card-header>
       <ion-card-title>Location Map</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <img [src]="mapUrl" alt="Location Map" class="static-map" (error)="onMapLoadError($event)">
-      <p style="font-size: 0.7rem; color: #666; margin-top: 8px; word-break: break-all;">{{ mapUrl }}</p>
+      <div id="tab1-map" class="location-map"></div>
     </ion-card-content>
   </ion-card>
 

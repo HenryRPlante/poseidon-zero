@@ -15,11 +15,11 @@ export class Tab2Page implements OnInit, OnDestroy {
   selectedSegment = 'live';
 
   // Live readings
-  waterTemp = 0;
-  turbidity = 0;
-  tds = 0;
-  ec = 0;
-  ph = 0;
+  waterTemp: number | null = null;
+  turbidity: number | null = null;
+  tds: number | null = null;
+  ec: number | null = null;
+  ph: number | null = null;
 
   // Trial data
   trials: HistoricalData[] = [];
@@ -36,12 +36,11 @@ export class Tab2Page implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(reading => {
         if (reading) {
-          this.waterTemp = reading.temperature;
-          this.tds = reading.tds;
-          this.ec = reading.ec;
-          this.ph = reading.ph;
-          // Turbidity would come from additional sensor if available
-          this.turbidity = 3.1; // Placeholder
+          this.waterTemp = reading.temperature ?? null;
+          this.tds = reading.tds ?? null;
+          this.ec = reading.ec ?? null;
+          this.ph = reading.ph ?? null;
+          this.turbidity = null;
         }
       });
 

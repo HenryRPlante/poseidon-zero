@@ -6,6 +6,12 @@
 
 <ion-content [fullscreen]="true" class="ion-padding">
 
+  <div class="sensor-detect-strip">
+    <ion-chip [color]="devices.length > 0 ? 'success' : 'medium'">
+      <ion-label>{{ sensorDetectionText }}</ion-label>
+    </ion-chip>
+  </div>
+
   <!-- Trial Selection -->
   <ion-card *ngIf="trials.length > 0">
     <ion-card-header>
@@ -26,14 +32,10 @@
       <ion-card-title>Sensor Status Overview</ion-card-title>
     </ion-card-header>
     <ion-card-content class="chart-data-grid">
-      <div style="margin-bottom:8px">
-        <ion-badge color="primary">Live pH: </ion-badge>
-        <span style="font-weight:600; margin-left:8px">{{ currentPh !== null ? (currentPh | number:'1.2-2') : '—' }}</span>
-      </div>
       <div class="chart-container">
         <app-sensor-chart 
           [readings]="readingsHistory"
-          [currentReading]="selectedTrial ? selectedTrial.readings[selectedTrial.readings.length - 1] : null"
+          [currentReading]="selectedTrial ? selectedTrial.readings[selectedTrial.readings.length - 1] : (readingsHistory.length > 0 ? readingsHistory[readingsHistory.length - 1] : null)"
           [chartType]="'radar'"
           [showOptimalRange]="true">
         </app-sensor-chart>
@@ -41,12 +43,12 @@
       <div class="data-sidebar">
         <p class="sidebar-label">Device Health</p>
         <div class="primary-values">
-          <div class="primary-row"><span class="primary-label">Temperature</span><span class="primary-value">{{ avgTemperature | number: '1.2-2' }}°C</span></div>
-          <div class="primary-row"><span class="primary-label">TDS</span><span class="primary-value">{{ avgTds | number: '1.2-2' }} ppm</span></div>
-          <div class="primary-row"><span class="primary-label">EC</span><span class="primary-value">{{ avgEc | number: '1.2-2' }} mS/cm</span></div>
-          <div class="primary-row"><span class="primary-label">pH</span><span class="primary-value">{{ avgPh | number: '1.2-2' }}</span></div>
-          <div class="primary-row"><span class="primary-label">Battery</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.batteryLevel || 0 }}%</span></div>
-          <div class="primary-row"><span class="primary-label">Signal</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.signalStrength || 0 }} dBm</span></div>
+          <div class="primary-row"><span class="primary-label">Temperature</span><span class="primary-value">{{ avgTemperature !== null ? ((avgTemperature | number: '1.2-2') + '°C') : '---' }}</span></div>
+          <div class="primary-row"><span class="primary-label">TDS</span><span class="primary-value">{{ avgTds !== null ? ((avgTds | number: '1.2-2') + ' ppm') : '---' }}</span></div>
+          <div class="primary-row"><span class="primary-label">EC</span><span class="primary-value">{{ avgEc !== null ? ((avgEc | number: '1.2-2') + ' mS/cm') : '---' }}</span></div>
+          <div class="primary-row"><span class="primary-label">pH</span><span class="primary-value">{{ avgPh !== null ? (avgPh | number: '1.2-2') : '---' }}</span></div>
+          <div class="primary-row"><span class="primary-label">Battery</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.batteryLevel !== undefined ? ((readingsHistory[readingsHistory.length - 1]?.batteryLevel | number: '1.2-2') + '%') : '---' }}</span></div>
+          <div class="primary-row"><span class="primary-label">Signal</span><span class="primary-value">{{ readingsHistory[readingsHistory.length - 1]?.signalStrength !== undefined ? ((readingsHistory[readingsHistory.length - 1]?.signalStrength | number: '1.2-2') + ' dBm') : '---' }}</span></div>
         </div>
       </div>
     </ion-card-content>
@@ -59,10 +61,10 @@
     </ion-card-header>
     <ion-card-content>
       <div class="analysis-stats">
-        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTemperature | number: '1.2-2' }}°C</span></div>
-        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTemperature | number: '1.2-2' }}°C</span></div>
-        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTemperature | number: '1.2-2' }}°C</span></div>
-        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTemperature - minTemperature) | number: '1.2-2' }}°C</span></div>
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTemperature !== null ? ((avgTemperature | number: '1.2-2') + '°C') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTemperature !== null ? ((minTemperature | number: '1.2-2') + '°C') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTemperature !== null ? ((maxTemperature | number: '1.2-2') + '°C') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTemperature !== null && minTemperature !== null) ? (((maxTemperature - minTemperature) | number: '1.2-2') + '°C') : '---' }}</span></div>
       </div>
       
       <div class="optimal-range-container">
@@ -72,10 +74,10 @@
           </ion-button>
           <span>Optimal Range: 20 - 25°C</span>
         </div>
-        <div class="optimal-range-bar temperature" [style.--current-value]="((avgTemperature - 0) / 30 * 100) + '%'">
+        <div class="optimal-range-bar temperature" [style.--current-value]="((((avgTemperature ?? 0) - 0) / 30) * 100) + '%'">
           <div class="optimal-zone" [style.left.%]="((20 - 0) / 30 * 100)" [style.width.%]="((25 - 20) / 30 * 100)" *ngIf="showOptimalRanges.temperature"></div>
           <div class="current-indicator"></div>
-          <div class="indicator-label">{{ avgTemperature | number: '1.2-2' }}°C</div>
+          <div class="indicator-label">{{ avgTemperature !== null ? ((avgTemperature | number: '1.2-2') + '°C') : '---' }}</div>
         </div>
         <div class="range-labels">
           <span class="min">0°C</span>
@@ -93,10 +95,10 @@
     </ion-card-header>
     <ion-card-content>
       <div class="analysis-stats">
-        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTds | number: '1.2-2' }} ppm</span></div>
-        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTds | number: '1.2-2' }} ppm</span></div>
-        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTds | number: '1.2-2' }} ppm</span></div>
-        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTds - minTds) | number: '1.2-2' }} ppm</span></div>
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgTds !== null ? ((avgTds | number: '1.2-2') + ' ppm') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minTds !== null ? ((minTds | number: '1.2-2') + ' ppm') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxTds !== null ? ((maxTds | number: '1.2-2') + ' ppm') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Range</span><span class="stat-value">{{ (maxTds !== null && minTds !== null) ? (((maxTds - minTds) | number: '1.2-2') + ' ppm') : '---' }}</span></div>
       </div>
       
       <div class="optimal-range-container">
@@ -106,10 +108,10 @@
           </ion-button>
           <span>Optimal Range: 500 - 1000 ppm</span>
         </div>
-        <div class="optimal-range-bar tds" [style.--current-value]="((avgTds - 0) / 1500 * 100) + '%'">
+        <div class="optimal-range-bar tds" [style.--current-value]="((((avgTds ?? 0) - 0) / 1500) * 100) + '%'">
           <div class="optimal-zone" [style.left.%]="((500 - 0) / 1500 * 100)" [style.width.%]="((1000 - 500) / 1500 * 100)" *ngIf="showOptimalRanges.tds"></div>
           <div class="current-indicator"></div>
-          <div class="indicator-label">{{ avgTds | number: '1.2-2' }} ppm</div>
+          <div class="indicator-label">{{ avgTds !== null ? ((avgTds | number: '1.2-2') + ' ppm') : '---' }}</div>
         </div>
         <div class="range-labels">
           <span class="min">0 ppm</span>
@@ -127,8 +129,8 @@
     </ion-card-header>
     <ion-card-content>
       <div class="analysis-stats">
-        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgEc | number: '1.2-2' }} mS/cm</span></div>
-        <div class="stat"><span class="stat-label">Last</span><span class="stat-value">{{ (readingsHistory[readingsHistory.length - 1]?.ec || 0) | number: '1.2-2' }} mS/cm</span></div>
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgEc !== null ? ((avgEc | number: '1.2-2') + ' mS/cm') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Last</span><span class="stat-value">{{ readingsHistory[readingsHistory.length - 1]?.ec !== undefined ? ((readingsHistory[readingsHistory.length - 1]?.ec | number: '1.2-2') + ' mS/cm') : '---' }}</span></div>
       </div>
       
       <div class="optimal-range-container">
@@ -138,10 +140,10 @@
           </ion-button>
           <span>Optimal Range: 1.0 - 2.0 mS/cm</span>
         </div>
-        <div class="optimal-range-bar ec" [style.--current-value]="((avgEc - 0) / 2.5 * 100) + '%'">
+        <div class="optimal-range-bar ec" [style.--current-value]="((((avgEc ?? 0) - 0) / 2.5) * 100) + '%'">
           <div class="optimal-zone" [style.left.%]="((1.0 - 0) / 2.5 * 100)" [style.width.%]="((2.0 - 1.0) / 2.5 * 100)" *ngIf="showOptimalRanges.ec"></div>
           <div class="current-indicator"></div>
-          <div class="indicator-label">{{ avgEc | number: '1.2-2' }} mS/cm</div>
+          <div class="indicator-label">{{ avgEc !== null ? ((avgEc | number: '1.2-2') + ' mS/cm') : '---' }}</div>
         </div>
         <div class="range-labels">
           <span class="min">0 mS/cm</span>
@@ -158,9 +160,9 @@
     </ion-card-header>
     <ion-card-content>
       <div class="analysis-stats">
-        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgPh | number: '1.2-2' }}</span></div>
-        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minPh | number: '1.2-2' }}</span></div>
-        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxPh | number: '1.2-2' }}</span></div>
+        <div class="stat"><span class="stat-label">Average</span><span class="stat-value">{{ avgPh !== null ? (avgPh | number: '1.2-2') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Min</span><span class="stat-value">{{ minPh !== null ? (minPh | number: '1.2-2') : '---' }}</span></div>
+        <div class="stat"><span class="stat-label">Max</span><span class="stat-value">{{ maxPh !== null ? (maxPh | number: '1.2-2') : '---' }}</span></div>
       </div>
       
       <div class="optimal-range-container">
@@ -170,10 +172,10 @@
           </ion-button>
           <span>Optimal Range: 6.5 - 7.5</span>
         </div>
-        <div class="optimal-range-bar ph" [style.--current-value]="((avgPh - 0) / 14 * 100) + '%'">
+        <div class="optimal-range-bar ph" [style.--current-value]="((((avgPh ?? 0) - 0) / 14) * 100) + '%'">
           <div class="optimal-zone" [style.left.%]="((6.5 - 0) / 14 * 100)" [style.width.%]="((7.5 - 6.5) / 14 * 100)" *ngIf="showOptimalRanges.ph"></div>
           <div class="current-indicator"></div>
-          <div class="indicator-label">{{ avgPh | number: '1.2-2' }}</div>
+          <div class="indicator-label">{{ avgPh !== null ? (avgPh | number: '1.2-2') : '---' }}</div>
         </div>
         <div class="range-labels">
           <span class="min">0</span>

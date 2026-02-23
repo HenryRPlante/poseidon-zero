@@ -32,6 +32,7 @@
               }
             ],
             "styles": ["src/global.scss", "src/theme/variables.scss"],
+            "allowedCommonJsDependencies": ["leaflet"],
             "scripts": []
           },
           "configurations": {
@@ -44,8 +45,8 @@
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "2kb",
-                  "maximumError": "4kb"
+                  "maximumWarning": "6kb",
+                  "maximumError": "6kb"
                 }
               ],
               "fileReplacements": [

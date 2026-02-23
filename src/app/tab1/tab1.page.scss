@@ -10,9 +10,10 @@ ion-badge {
   font-size: 1rem;
 }
 
-.static-map {
+.location-map {
   width: 100%;
-  height: auto;
+  height: 320px;
+  min-height: 320px;
   border-radius: 8px;
   display: block;
 }
@@ -36,4 +37,14 @@ ion-card:last-of-type {
   width: 95vw;
   margin-left: auto;
   margin-right: auto;
+}
+
+.sensor-detect-strip {
+  width: 95vw;
+  margin: 0 auto 8px auto;
+
+  ion-chip {
+    height: 26px;
+    font-size: 12px;
+  }
 }

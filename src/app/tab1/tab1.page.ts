@@ -3,6 +3,7 @@ import { SensorDataService } from '../services/sensor-data.service';
 import { SensorReading, SensorDevice } from '../models/sensor-data.model';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import * as L from 'leaflet';
 
 @Component({
   selector: 'app-tab1',
@@ -12,19 +13,27 @@ import { takeUntil } from 'rxjs/operators';
 })
 export class Tab1Page implements OnInit, OnDestroy {
 
-  battery = 0;
-  signal = 0;
+  battery: number | null = null;
+  signal: number | null = null;
   latitude = 0;
   longitude = 0;
-  mapUrl = '';
   isLoading = false;
   deviceStatus = 'offline';
 
   currentReading: SensorReading | null = null;
   selectedDevice: SensorDevice | null = null;
   devices: SensorDevice[] = [];
+  private map: L.Map | null = null;
+  private locationMarker: L.CircleMarker | null = null;
 
   private destroy$ = new Subject<void>();
+
+  get sensorDetectionText(): string {
+    if (this.devices.length === 0) {
+      return 'Detecting sensors...';
+    }
+    return `Connected: ${this.devices.map(device => device.name).join(', ')}`;
+  }
 
   constructor(private sensorDataService: SensorDataService) {}
 
@@ -38,6 +47,7 @@ export class Tab1Page implements OnInit, OnDestroy {
           this.selectedDevice = devices[0];
           this.latitude = this.selectedDevice.location.latitude;
           this.longitude = this.selectedDevice.location.longitude;
+          this.initializeOrUpdateMap();
         }
       });
 
@@ -47,16 +57,26 @@ export class Tab1Page implements OnInit, OnDestroy {
       .subscribe(reading => {
         if (reading) {
           this.currentReading = reading;
-          this.battery = 87; // In a real scenario, this would come from the sensor reading
-          this.signal = -72; // In a real scenario, this would come from the sensor reading
+          this.battery = reading.batteryLevel ?? null;
+          this.signal = reading.signalStrength ?? null;
         }
       });
 
     this.loadLiveData();
-    this.generateMapUrl();
+  }
+
+  ionViewDidEnter() {
+    setTimeout(() => {
+      this.initializeOrUpdateMap();
+    }, 0);
   }
 
   ngOnDestroy() {
+    if (this.map) {
+      this.map.remove();
+      this.map = null;
+    }
+
     this.destroy$.next();
     this.destroy$.complete();
   }
@@ -70,8 +90,8 @@ export class Tab1Page implements OnInit, OnDestroy {
         .subscribe({
           next: (reading) => {
             this.currentReading = reading;
-            this.battery = 87;
-            this.signal = -72;
+            this.battery = reading.batteryLevel ?? null;
+            this.signal = reading.signalStrength ?? null;
             this.deviceStatus = 'online';
             this.isLoading = false;
           },
@@ -84,23 +104,42 @@ export class Tab1Page implements OnInit, OnDestroy {
     }
   }
 
-  generateMapUrl() {
-    const zoom = 15;
-    const width = 600;
-    const height = 300;
+  private initializeOrUpdateMap() {
+    if (!Number.isFinite(this.latitude) || !Number.isFinite(this.longitude)) {
+      return;
+    }
 
-    this.mapUrl =
-      `https://static-maps.yandex.ru/1.x/?` +
-      `ll=${this.longitude},${this.latitude}` +
-      `&size=${width},${height}` +
-      `&z=${zoom}` +
-      `&l=map` +
-      `&pt=${this.longitude},${this.latitude},pm2rdm`;
-  }
+    const coordinates: L.LatLngExpression = [this.latitude, this.longitude];
 
-  onMapLoadError(event: any) {
-    console.error('Map image failed to load:', event);
-    console.log('URL attempted:', this.mapUrl);
+    if (!this.map) {
+      this.map = L.map('tab1-map', {
+        zoomControl: true,
+        attributionControl: true
+      }).setView(coordinates, 12);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(this.map);
+    } else {
+      this.map.setView(coordinates, this.map.getZoom());
+    }
+
+    if (this.locationMarker) {
+      this.locationMarker.remove();
+    }
+
+    this.locationMarker = L.circleMarker(coordinates, {
+      radius: 8,
+      color: '#d32f2f',
+      fillColor: '#d32f2f',
+      fillOpacity: 0.9,
+      weight: 2
+    })
+      .addTo(this.map)
+      .bindPopup('Buoy Location');
+
+    this.map.invalidateSize();
   }
 
   refreshData() {
@@ -111,7 +150,7 @@ export class Tab1Page implements OnInit, OnDestroy {
     this.selectedDevice = device;
     this.latitude = device.location.latitude;
     this.longitude = device.location.longitude;
-    this.generateMapUrl();
+    this.initializeOrUpdateMap();
     this.loadLiveData();
   }
 }

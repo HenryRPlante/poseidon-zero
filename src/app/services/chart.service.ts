@@ -401,15 +401,7 @@ export class ChartService {
    */
   getRadarChartConfig(reading: SensorReading | null): ChartConfiguration {
     if (!reading) {
-      reading = {
-        timestamp: new Date(),
-        tds: 450,
-        temperature: 22,
-        ec: 0.8,
-        ph: 7.2,
-        signalStrength: -72,
-        batteryLevel: 87
-      };
+      throw new Error('No sensor reading available for radar chart');
     }
 
     return {

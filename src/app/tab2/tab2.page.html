@@ -27,36 +27,35 @@
       <ion-list>
         <ion-item>
           <ion-label>Water Temperature</ion-label>
-          <ion-note slot="end">{{ waterTemp | number: '1.2-2' }}°C</ion-note>
+          <ion-note slot="end">{{ waterTemp !== null ? ((waterTemp | number: '1.2-2') + '°C') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
           <ion-label>TDS (Total Dissolved Solids)</ion-label>
-          <ion-note slot="end">{{ tds | number: '1.2-2' }} ppm</ion-note>
+          <ion-note slot="end">{{ tds !== null ? ((tds | number: '1.2-2') + ' ppm') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
           <ion-label>EC (Electrical Conductivity)</ion-label>
-          <ion-note slot="end">{{ ec | number: '1.2-2' }} mS/cm</ion-note>
+          <ion-note slot="end">{{ ec !== null ? ((ec | number: '1.2-2') + ' mS/cm') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
           <ion-label>pH Level</ion-label>
-          <ion-note slot="end">{{ ph | number: '1.2-2' }}</ion-note>
+          <ion-note slot="end">{{ ph !== null ? (ph | number: '1.2-2') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
           <ion-label>Turbidity</ion-label>
-          <ion-note slot="end">{{ turbidity | number: '1.2-2' }} NTU</ion-note>
+          <ion-note slot="end">{{ turbidity !== null ? ((turbidity | number: '1.2-2') + ' NTU') : '---' }}</ion-note>
         </ion-item>
       </ion-list>
     </ion-card-content>
   </ion-card>
 
-  <!-- Mock Data Notice -->
+  <!-- Data Notice -->
   <ion-card *ngIf="readingsHistory.length === 0 && selectedSegment === 'live'">
     <ion-card-header>
       <ion-card-title>Data Status</ion-card-title>
     </ion-card-header>
     <ion-card-content>
-      <p>Showing mock sensor data. Charts will update with real data once your Arduino device connects.</p>
-      <p><strong>Note:</strong> Polling interval is set to every 5 minutes to conserve battery on remote devices.</p>
+      <p>No sensor data detected yet.</p>
     </ion-card-content>
   </ion-card>
 
