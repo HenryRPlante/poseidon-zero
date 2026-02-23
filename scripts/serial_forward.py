@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
-Serial -> HTTP forwarder for Arduino pH readings
-Reads newline-separated pH values from a serial port and POSTs JSON to a configured URL.
+Serial -> HTTP forwarder for Arduino sensor readings.
+Reads newline-separated lines from a serial port and POSTs JSON to a configured URL.
+
+Accepted serial line formats:
+- Plain float (legacy): 7.21  -> {"ph": 7.21, "timestamp": "..."}
+- JSON object: {"ph":7.2,"temperature":24.1,"tds":430}
+- JSON envelope: {"success":true,"data":{...}}
+- key:value CSV: ph:7.2,temperature:24.1,tds:430
 """
 
 import argparse
@@ -9,22 +15,95 @@ import time
 import json
 import requests
 import serial
+import glob
 import logging
 from datetime import datetime
+from serial.tools import list_ports
 
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
 
+SENSOR_KEYS = {
+    'ph',
+    'temperature',
+    'tds',
+    'ec',
+    'turbidity',
+    'salinity',
+    'signalStrength',
+    'batteryLevel'
+}
+
 
 def parse_args():
-    p = argparse.ArgumentParser(description='Forward serial pH readings to an HTTP endpoint')
-    p.add_argument('--port', '-p', required=True, help='Serial port (e.g. /dev/ttyACM0 or COM3)')
+    p = argparse.ArgumentParser(description='Forward serial sensor readings to an HTTP endpoint')
+    p.add_argument('--port', '-p', required=False, default=None, help='Serial port (auto-detected if omitted)')
     p.add_argument('--baud', '-b', type=int, default=9600, help='Baud rate (default: 9600)')
-    p.add_argument('--url', '-u', required=True, help='Target HTTP URL to POST readings (e.g. http://localhost:5000/ph)')
+    p.add_argument('--url', '-u', required=True, help='Target HTTP URL to POST readings (e.g. http://localhost:5000/api/sensors)')
     p.add_argument('--interval', '-i', type=float, default=0.0, help='Minimum seconds between forwards (0 = send every reading)')
     p.add_argument('--timeout', type=float, default=5.0, help='HTTP request timeout in seconds')
     p.add_argument('--retries', type=int, default=3, help='Number of HTTP retry attempts on failure')
-    p.add_argument('--ignore-malformed', action='store_true', help='Ignore lines that cannot be parsed as float')
+    p.add_argument('--ignore-malformed', action='store_true', help='Ignore lines that cannot be parsed as sensor data')
     return p.parse_args()
+
+
+def _to_number(value):
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())
+        except Exception:
+            return None
+    return None
+
+
+def _extract_sensor_fields(candidate):
+    payload = {}
+    for key in SENSOR_KEYS:
+        if key in candidate:
+            number = _to_number(candidate.get(key))
+            if number is not None:
+                payload[key] = number
+    return payload
+
+
+def parse_line_to_payload(line):
+    now = datetime.utcnow().isoformat() + 'Z'
+
+    # 1) JSON object line
+    try:
+        parsed = json.loads(line)
+        if isinstance(parsed, dict):
+            source = parsed.get('data') if isinstance(parsed.get('data'), dict) else parsed
+            payload = _extract_sensor_fields(source)
+            if payload:
+                payload['timestamp'] = source.get('timestamp', parsed.get('timestamp', now))
+                return payload
+    except Exception:
+        pass
+
+    # 2) key:value,key:value line
+    if ':' in line:
+        pieces = [piece.strip() for piece in line.split(',') if piece.strip()]
+        candidate = {}
+        for piece in pieces:
+            if ':' not in piece:
+                continue
+            key, value = piece.split(':', 1)
+            candidate[key.strip()] = value.strip()
+        payload = _extract_sensor_fields(candidate)
+        if payload:
+            payload['timestamp'] = now
+            return payload
+
+    # 3) legacy plain pH float line
+    try:
+        ph = float(line.split()[0])
+        return {'ph': ph, 'timestamp': now}
+    except Exception:
+        return None
 
 
 def send_reading(url, payload, timeout, retries):
@@ -41,8 +120,59 @@ def send_reading(url, payload, timeout, retries):
     return False
 
 
+def detect_serial_port():
+    # Prefer pyserial-discovered USB serial ports first (cross-platform)
+    ports = list(list_ports.comports())
+    preferred = []
+    fallback = []
+
+    for port_info in ports:
+        name = (port_info.device or '').lower()
+        desc = (port_info.description or '').lower()
+        hwid = (port_info.hwid or '').lower()
+
+        score = 0
+        if 'arduino' in desc or 'arduino' in hwid:
+            score += 3
+        if 'ttyacm' in name or 'usbmodem' in name:
+            score += 2
+        if 'ttyusb' in name or 'usbserial' in name or name.startswith('com'):
+            score += 1
+
+        if score >= 2:
+            preferred.append(port_info.device)
+        else:
+            fallback.append(port_info.device)
+
+    if preferred:
+        return preferred[0]
+    if fallback:
+        return fallback[0]
+
+    # Fallback glob scan for Linux/macOS when metadata is sparse
+    candidates = []
+    patterns = [
+        '/dev/ttyACM*',
+        '/dev/ttyUSB*',
+        '/dev/cu.usbmodem*',
+        '/dev/cu.usbserial*'
+    ]
+    for pattern in patterns:
+        candidates.extend(sorted(glob.glob(pattern)))
+
+    return candidates[0] if candidates else None
+
+
 def main():
     args = parse_args()
+
+    if not args.port:
+        detected = detect_serial_port()
+        if not detected:
+            logging.error('No serial device detected. Plug in your Arduino and rerun.')
+            return
+        args.port = detected
+        logging.info('Auto-detected serial port: %s', args.port)
 
     # Keep trying to open the serial port until a device is connected.
     ser = None
@@ -57,7 +187,6 @@ def main():
 
     last_sent = 0.0
     try:
-        buffer = ''
         while True:
             try:
                 raw = ser.readline()
@@ -91,18 +220,12 @@ def main():
 
             logging.debug('RX: %s', line)
 
-            # Try to parse a float from the line
-            try:
-                ph = float(line.split()[0])
-            except Exception as e:
-                logging.warning('Malformed line (not float): %s', line)
+            payload = parse_line_to_payload(line)
+            if payload is None:
+                logging.warning('Malformed line (not sensor data): %s', line)
                 if args.ignore_malformed:
                     continue
-                else:
-                    continue
-
-            now = datetime.utcnow().isoformat() + 'Z'
-            payload = {'ph': ph, 'timestamp': now}
+                continue
 
             # Throttle forwards if requested
             if args.interval > 0 and (time.time() - last_sent) < args.interval:

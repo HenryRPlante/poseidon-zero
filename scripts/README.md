@@ -1,7 +1,7 @@
 Serial forwarder
 
-This repo includes a small Python utility to read newline-separated pH values from a serial port
-(Arduino) and forward them to an HTTP endpoint.
+This repo includes a small Python utility to read newline-separated sensor data from a serial port
+(Arduino) and forward it to an HTTP endpoint.
 
 Usage
 
@@ -20,11 +20,22 @@ python3 server/receiver.py
 3) Run the forwarder pointing at your serial device and the receiver URL:
 
 ```bash
-python3 scripts/serial_forward.py --port /dev/ttyACM0 --baud 9600 --url http://localhost:5000/ph
+python3 scripts/run_forwarder.sh
+```
+
+Optional (manual port override):
+
+```bash
+python3 scripts/serial_forward.py --port /dev/ttyACM0 --baud 9600 --url http://localhost:5000/api/sensors
 ```
 
 Notes
 
-- The forwarder expects the Arduino to print one pH value per line (e.g. `7.21`). Your sketch already does this with `Serial.println(phValue, 2);`.
-- You can change the destination URL to your app or server. The forwarder sends JSON: `{ "ph": 7.21, "timestamp": "..." }`.
+- Supported serial line formats:
+	- plain float (`7.21`) -> legacy pH-only payload
+	- JSON object (`{"ph":7.2,"temperature":24.1,"tds":430}`)
+	- JSON envelope (`{"success":true,"data":{...}}`)
+	- key:value CSV (`ph:7.2,temperature:24.1,tds:430`)
+- If `--port` is omitted, the forwarder auto-detects the Arduino serial port.
+- The forwarder sends JSON to the URL and preserves any recognized sensor fields: `ph`, `temperature`, `tds`, `ec`, `turbidity`, `salinity`, `signalStrength`, `batteryLevel`.
 - Add `--interval N` to limit forwards to at most one per N seconds.

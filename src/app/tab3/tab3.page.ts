@@ -76,10 +76,11 @@ export class Tab3Page implements OnInit, OnDestroy {
     interval(2000)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        this.http.get<any>('http://localhost:5000/ph/last').subscribe({
+        this.http.get<any>('http://localhost:5000/api/sensors/last').subscribe({
           next: (data) => {
-            if (data && data.ph !== undefined) {
-              this.currentPh = Number(data.ph);
+            const reading = data?.data ?? data;
+            if (reading && reading.ph !== undefined) {
+              this.currentPh = Number(reading.ph);
             }
           },
           error: () => {
