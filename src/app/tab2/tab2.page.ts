@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
-import { SensorReading, HistoricalData } from '../models/sensor-data.model';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { SensorReading, HistoricalData, SensorDevice } from '../models/sensor-data.model';
+import { Subject, interval } from 'rxjs';
+import { takeUntil, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tab2',
@@ -25,30 +25,22 @@ export class Tab2Page implements OnInit, OnDestroy {
   trials: HistoricalData[] = [];
   selectedTrial: HistoricalData | null = null;
   readingsHistory: SensorReading[] = [];
+  devices: SensorDevice[] = [];
 
   private destroy$ = new Subject<void>();
+  private pollingActive = false;
 
   constructor(private sensorDataService: SensorDataService) {}
 
   ngOnInit() {
-    // Subscribe to current sensor reading (live data)
-    this.sensorDataService.currentReading$
+    // Subscribe to devices to get device ID for polling
+    this.sensorDataService.devices$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(reading => {
-        if (reading) {
-          this.waterTemp = reading.temperature ?? null;
-          this.tds = reading.tds ?? null;
-          this.ec = reading.ec ?? null;
-          this.ph = reading.ph ?? null;
-          this.turbidity = null;
+      .subscribe(devices => {
+        this.devices = devices;
+        if (devices.length > 0 && !this.pollingActive) {
+          this.startAutoPolling(devices[0].id);
         }
-      });
-
-    // Subscribe to readings history
-    this.sensorDataService.readingsHistory$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(readings => {
-        this.readingsHistory = readings;
       });
 
     // Subscribe to trial data
@@ -56,6 +48,31 @@ export class Tab2Page implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(trials => {
         this.trials = trials;
+      });
+  }
+
+  private startAutoPolling(deviceId: string) {
+    if (this.pollingActive) return;
+    this.pollingActive = true;
+
+    // Poll every 2 seconds and build history
+    interval(2000)
+      .pipe(
+        switchMap(() => this.sensorDataService.fetchSensorData(deviceId)),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (reading) => {
+          this.waterTemp = reading.temperature ?? null;
+          this.tds = reading.tds ?? null;
+          this.ec = reading.ec ?? null;
+          this.ph = reading.ph ?? null;
+          this.turbidity = null;
+          this.readingsHistory.push(reading);
+        },
+        error: (error) => {
+          console.error('Error polling Tab2 data:', error);
+        }
       });
   }
 

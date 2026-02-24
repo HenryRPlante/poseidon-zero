@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
 import { SensorReading, SensorDevice } from '../models/sensor-data.model';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, interval } from 'rxjs';
+import { takeUntil, switchMap } from 'rxjs/operators';
 import * as L from 'leaflet';
 
 @Component({
@@ -27,6 +27,7 @@ export class Tab1Page implements OnInit, OnDestroy {
   private locationMarker: L.CircleMarker | null = null;
 
   private destroy$ = new Subject<void>();
+  private pollingActive = false;
 
   get sensorDetectionText(): string {
     if (this.devices.length === 0) {
@@ -38,7 +39,10 @@ export class Tab1Page implements OnInit, OnDestroy {
   constructor(private sensorDataService: SensorDataService) {}
 
   ngOnInit() {
-    // Subscribe to devices
+    // Set up device display without polling
+    this.sensorDataService.setPollingInterval(2000);
+
+    // Subscribe to devices only for display
     this.sensorDataService.devices$
       .pipe(takeUntil(this.destroy$))
       .subscribe(devices => {
@@ -48,21 +52,43 @@ export class Tab1Page implements OnInit, OnDestroy {
           this.latitude = this.selectedDevice.location.latitude;
           this.longitude = this.selectedDevice.location.longitude;
           this.initializeOrUpdateMap();
-        }
-      });
-
-    // Subscribe to current sensor reading
-    this.sensorDataService.currentReading$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(reading => {
-        if (reading) {
-          this.currentReading = reading;
-          this.battery = reading.batteryLevel ?? null;
-          this.signal = reading.signalStrength ?? null;
+          this.deviceStatus = 'online';
         }
       });
 
     this.loadLiveData();
+  }
+
+  /**
+   * Start continuous polling of sensor data
+   */
+  private startAutoPolling() {
+    if (this.pollingActive) return;
+    this.pollingActive = true;
+
+    // Poll every 2 seconds
+    interval(2000)
+      .pipe(
+        switchMap(() => {
+          if (this.selectedDevice) {
+            return this.sensorDataService.fetchSensorData(this.selectedDevice!.id);
+          }
+          return [];
+        }),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (reading) => {
+          this.currentReading = reading;
+          this.battery = reading.batteryLevel ?? null;
+          this.signal = reading.signalStrength ?? null;
+          this.deviceStatus = 'online';
+        },
+        error: (error) => {
+          console.error('Polling error:', error);
+          this.deviceStatus = 'offline';
+        }
+      });
   }
 
   ionViewDidEnter() {
@@ -77,6 +103,7 @@ export class Tab1Page implements OnInit, OnDestroy {
       this.map = null;
     }
 
+    this.pollingActive = false;
     this.destroy$.next();
     this.destroy$.complete();
   }

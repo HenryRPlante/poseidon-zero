@@ -69,11 +69,31 @@ export class SensorChartComponent implements OnInit {
         this.chartConfig = this.chartService.getMultiSensorChartConfig(this.readings);
         break;
       case 'radar':
-        this.chartConfig = this.chartService.getRadarChartConfig(this.currentReading);
+        // Calculate max values from readings for dynamic scaling
+        const maxValues = this.calculateMaxValues();
+        this.chartConfig = this.chartService.getRadarChartConfig(this.currentReading, maxValues);
         break;
       default:
         this.chartConfig = this.chartService.getTemperatureChartConfig(this.readings, this.showOptimalRange);
     }
+  }
+
+  private calculateMaxValues(): { temperature: number, tds: number, ec: number, ph: number } {
+    if (this.readings.length === 0) {
+      return { temperature: 50, tds: 1000, ec: 5, ph: 14 };
+    }
+
+    const temperatures = this.readings.map(r => r.temperature);
+    const tdsList = this.readings.map(r => r.tds);
+    const ecList = this.readings.map(r => r.ec);
+    const phList = this.readings.map(r => r.ph);
+
+    return {
+      temperature: Math.max(...temperatures) * 1.1, // 10% buffer
+      tds: Math.max(...tdsList) * 1.1,
+      ec: Math.max(...ecList) * 1.1,
+      ph: Math.max(...phList) * 1.1
+    };
   }
 
   /**

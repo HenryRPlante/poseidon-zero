@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
 import { SensorReading, HistoricalData, SensorDevice } from '../models/sensor-data.model';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Subject, interval } from 'rxjs';
+import { takeUntil, switchMap } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tab3',
@@ -26,6 +26,9 @@ export class Tab3Page implements OnInit, OnDestroy {
   readingsHistory: SensorReading[] = [];
   devices: SensorDevice[] = [];
 
+  // Chart data (rolling 60-second window)
+  chartReadingsHistory: SensorReading[] = [];
+
   // Statistics
   avgTemperature: number | null = null;
   avgTds: number | null = null;
@@ -42,6 +45,10 @@ export class Tab3Page implements OnInit, OnDestroy {
   maxPh: number | null = null;
 
   private destroy$ = new Subject<void>();
+  private pollingActive = false;
+  private lastChartUpdate = 0;
+  private chartUpdateInterval = 5000; // Update chart every 5 seconds
+  private readonly CHART_WINDOW_MS = 60000; // 60 seconds rolling window
 
   get sensorDetectionText(): string {
     if (this.devices.length === 0) {
@@ -53,30 +60,59 @@ export class Tab3Page implements OnInit, OnDestroy {
   constructor(private sensorDataService: SensorDataService) {}
 
   ngOnInit() {
-    this.sensorDataService.readingsHistory$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(readings => {
-        this.readingsHistory = readings;
-        if (readings.length > 0) {
-          this.calculateStatistics(readings);
-        } else {
-          this.clearStatistics();
-        }
-      });
-
+    // Subscribe to devices and start independent polling
     this.sensorDataService.devices$
       .pipe(takeUntil(this.destroy$))
       .subscribe(devices => {
         this.devices = devices;
+        if (devices.length > 0 && !this.pollingActive) {
+          this.startAutoPolling(devices[0].id);
+        }
       });
 
-    // Subscribe to trial data from real sensor service
+    // Subscribe to trial data
     this.sensorDataService.historicalData$
       .pipe(takeUntil(this.destroy$))
       .subscribe(trials => {
         this.trials = trials;
       });
+  }
 
+  private startAutoPolling(deviceId: string) {
+    if (this.pollingActive) return;
+    this.pollingActive = true;
+
+    // Poll every 2 seconds
+    interval(2000)
+      .pipe(
+        switchMap(() => this.sensorDataService.fetchSensorData(deviceId)),
+        takeUntil(this.destroy$)
+      )
+      .subscribe({
+        next: (reading) => {
+          this.readingsHistory.push(reading);
+          this.calculateStatistics(this.readingsHistory);
+          
+          // Update chart every 5 seconds based on time
+          const now = Date.now();
+          if (now - this.lastChartUpdate >= this.chartUpdateInterval) {
+            this.updateChartData();
+            this.lastChartUpdate = now;
+          }
+        },
+        error: (error) => {
+          console.error('Error polling Tab3 data:', error);
+        }
+      });
+  }
+
+  private updateChartData() {
+    // Remove readings older than 60 seconds
+    const cutoffTime = Date.now() - this.CHART_WINDOW_MS;
+    this.chartReadingsHistory = this.readingsHistory.filter(r => {
+      const readingTime = new Date(r.timestamp).getTime();
+      return readingTime >= cutoffTime;
+    });
   }
 
   ngOnDestroy() {

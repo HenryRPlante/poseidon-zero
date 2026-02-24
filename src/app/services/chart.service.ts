@@ -34,11 +34,29 @@ export class ChartService {
   }
 
   /**
+   * Format timestamps for short time window (60 seconds)
+   */
+  private formatTimestampsForWindow(readings: SensorReading[]): string[] {
+    if (readings.length === 0) return [];
+    
+    const firstTime = new Date(readings[0].timestamp).getTime();
+    return readings.map(r => {
+      const readingTime = new Date(r.timestamp).getTime();
+      const elapsedSeconds = Math.round((readingTime - firstTime) / 1000);
+      return `${elapsedSeconds}s`;
+    });
+  }
+
+  /**
    * Generate temperature trend chart configuration
    */
   getTemperatureChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
-    const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const timestamps = this.formatTimestampsForWindow(readings);
     const temperatures = readings.map(r => r.temperature);
+
+    // Calculate dynamic Y-axis max with padding
+    const tempMax = temperatures.length > 0 ? Math.max(...temperatures) : 30;
+    const yAxisMax = Math.ceil(tempMax * 1.15); // 15% padding
 
     const config: any = {
       type: 'line',
@@ -53,17 +71,18 @@ export class ChartService {
             borderWidth: 2,
             fill: true,
             tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: 3,
+            pointHoverRadius: 5,
             pointBackgroundColor: '#ff6b6b',
             pointBorderColor: '#fff',
-            pointBorderWidth: 2
+            pointBorderWidth: 1
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        animation: false,
         plugins: {
           legend: {
             display: true,
@@ -71,13 +90,13 @@ export class ChartService {
           },
           title: {
             display: true,
-            text: 'Water Temperature Trend'
+            text: 'Temperature Trend'
           }
         },
         scales: {
           y: {
             min: 0,
-            max: 30,
+            max: yAxisMax,
             title: {
               display: true,
               text: 'Temperature (°C)'
@@ -86,7 +105,7 @@ export class ChartService {
           x: {
             title: {
               display: true,
-              text: 'Time'
+              text: 'Elapsed Time'
             }
           }
         }
@@ -106,8 +125,12 @@ export class ChartService {
    * Generate TDS trend chart configuration
    */
   getTdsChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
-    const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const timestamps = this.formatTimestampsForWindow(readings);
     const tdsList = readings.map(r => r.tds);
+
+    // Calculate dynamic Y-axis max with 15% padding
+    const tdsMax = tdsList.length > 0 ? Math.max(...tdsList) : 1500;
+    const yAxisMax = Math.ceil(tdsMax * 1.15);
 
     const config: any = {
       type: 'line',
@@ -122,17 +145,18 @@ export class ChartService {
             borderWidth: 2,
             fill: true,
             tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: 3,
+            pointHoverRadius: 5,
             pointBackgroundColor: '#4ecdc4',
             pointBorderColor: '#fff',
-            pointBorderWidth: 2
+            pointBorderWidth: 1
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        animation: false,
         plugins: {
           legend: {
             display: true,
@@ -140,13 +164,13 @@ export class ChartService {
           },
           title: {
             display: true,
-            text: 'TDS (Total Dissolved Solids) Trend'
+            text: 'TDS Trend'
           }
         },
         scales: {
           y: {
             min: 0,
-            max: 1500,
+            max: yAxisMax,
             title: {
               display: true,
               text: 'TDS (ppm)'
@@ -155,7 +179,7 @@ export class ChartService {
           x: {
             title: {
               display: true,
-              text: 'Time'
+              text: 'Elapsed Time'
             }
           }
         }
@@ -265,8 +289,12 @@ export class ChartService {
    * Generate pH trend chart configuration
    */
   getPhChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
-    const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const timestamps = this.formatTimestampsForWindow(readings);
     const phValues = readings.map(r => r.ph);
+
+    // Calculate dynamic Y-axis max with 15% padding
+    const phMax = phValues.length > 0 ? Math.max(...phValues) : 14;
+    const yAxisMax = Math.ceil(phMax * 1.15);
 
     const config: any = {
       type: 'line',
@@ -281,17 +309,18 @@ export class ChartService {
             borderWidth: 2,
             fill: true,
             tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: 3,
+            pointHoverRadius: 5,
             pointBackgroundColor: '#95e1d3',
             pointBorderColor: '#fff',
-            pointBorderWidth: 2
+            pointBorderWidth: 1
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        animation: false,
         plugins: {
           legend: {
             display: true,
@@ -299,14 +328,14 @@ export class ChartService {
           },
           title: {
             display: true,
-            text: 'pH Level Trend'
+            text: 'pH Trend'
           }
         },
         scales: {
           y: {
             beginAtZero: false,
             min: 0,
-            max: 14,
+            max: yAxisMax,
             title: {
               display: true,
               text: 'pH'
@@ -315,7 +344,7 @@ export class ChartService {
           x: {
             title: {
               display: true,
-              text: 'Time'
+              text: 'Elapsed Time'
             }
           }
         }
@@ -333,8 +362,12 @@ export class ChartService {
    * Generate EC trend chart configuration
    */
   getEcChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
-    const timestamps = readings.map(r => new Date(r.timestamp).toLocaleTimeString());
+    const timestamps = this.formatTimestampsForWindow(readings);
     const ecValues = readings.map(r => r.ec);
+
+    // Calculate dynamic Y-axis max with 15% padding
+    const ecMax = ecValues.length > 0 ? Math.max(...ecValues) : 2.5;
+    const yAxisMax = Math.ceil(ecMax * 1.15 * 100) / 100; // 15% padding, round to 2 decimals
 
     const config: any = {
       type: 'line',
@@ -349,17 +382,18 @@ export class ChartService {
             borderWidth: 2,
             fill: true,
             tension: 0.4,
-            pointRadius: 4,
-            pointHoverRadius: 6,
+            pointRadius: 3,
+            pointHoverRadius: 5,
             pointBackgroundColor: '#ffe66d',
             pointBorderColor: '#fff',
-            pointBorderWidth: 2
+            pointBorderWidth: 1
           }
         ]
       },
       options: {
         responsive: true,
         maintainAspectRatio: true,
+        animation: false,
         plugins: {
           legend: {
             display: true,
@@ -367,13 +401,13 @@ export class ChartService {
           },
           title: {
             display: true,
-            text: 'Electrical Conductivity Trend'
+            text: 'EC Trend'
           }
         },
         scales: {
           y: {
             min: 0,
-            max: 2.5,
+            max: yAxisMax,
             title: {
               display: true,
               text: 'EC (mS/cm)'
@@ -382,7 +416,7 @@ export class ChartService {
           x: {
             title: {
               display: true,
-              text: 'Time'
+              text: 'Elapsed Time'
             }
           }
         }
@@ -399,10 +433,16 @@ export class ChartService {
   /**
    * Generate radar chart for sensor comparison
    */
-  getRadarChartConfig(reading: SensorReading | null): ChartConfiguration {
+  getRadarChartConfig(reading: SensorReading | null, maxValues?: { temperature: number, tds: number, ec: number, ph: number }): ChartConfiguration {
     if (!reading) {
       throw new Error('No sensor reading available for radar chart');
     }
+
+    // Use provided max values or defaults
+    const tempMax = maxValues?.temperature || 50;
+    const tdsMax = maxValues?.tds || 1000;
+    const ecMax = maxValues?.ec || 5;
+    const phMax = maxValues?.ph || 14;
 
     return {
       type: 'radar',
@@ -412,10 +452,10 @@ export class ChartService {
           {
             label: 'Current Reading',
             data: [
-              (reading.temperature / 50) * 100,
-              Math.min((reading.tds / 1000) * 100, 100),
-              (reading.ec / 5) * 100,
-              (reading.ph / 14) * 100,
+              (reading.temperature / tempMax) * 100,
+              Math.min((reading.tds / tdsMax) * 100, 100),
+              (reading.ec / ecMax) * 100,
+              (reading.ph / phMax) * 100,
               Math.abs(reading.signalStrength) * 100 / 120,
               reading.batteryLevel
             ],

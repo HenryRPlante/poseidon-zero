@@ -77,7 +77,10 @@ export class SensorDataService {
       throw new Error(`Device ${deviceId} not found`);
     }
 
-    const url = `http://${device.ipAddress}:${device.port}/api/sensors`;
+    // Use /api/sensors/last endpoint for Flask compatibility
+    // Support both localhost HTTP and Codespaces HTTPS URLs
+    const protocol = device.ipAddress.includes('github.dev') ? 'https' : 'http';
+    const url = `${protocol}://${device.ipAddress}${!device.ipAddress.includes(':') && device.port ? `:${device.port}` : ''}/api/sensors/last`;
     
     return this.http.get<SensorDataResponse>(url).pipe(
       tap((response: SensorDataResponse) => {

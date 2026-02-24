@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format='[%(asctime)s] %(levelname)s: %(message)s')
@@ -20,7 +20,13 @@ SENSOR_KEYS = {
     'batteryLevel'
 }
 
-last_reading = None
+last_reading = {
+    'temperature': None,
+    'ph': None,
+    'tds': None,
+    'ec': None,
+    'timestamp': None
+}
 
 
 def normalize_payload(data):
@@ -40,19 +46,13 @@ def normalize_payload(data):
     if not normalized:
         return None
 
-    normalized['timestamp'] = source.get('timestamp', data.get('timestamp', datetime.utcnow().isoformat() + 'Z'))
+    normalized['timestamp'] = source.get('timestamp', data.get('timestamp', datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')))
     return normalized
 
 
 def merge_reading(new_data):
     global last_reading
-    if last_reading is None:
-        last_reading = new_data
-        return
-
-    merged = dict(last_reading)
-    merged.update(new_data)
-    last_reading = merged
+    last_reading.update(new_data)
 
 
 @app.route('/api/sensors', methods=['POST'])
@@ -69,7 +69,7 @@ def receive_sensors():
 
 @app.route('/api/sensors/last', methods=['GET'])
 def get_last_sensors():
-    if last_reading is None:
+    if not last_reading or all(v is None for v in last_reading.values()):
         return jsonify({'status': 'no_data'}), 204
     return jsonify({'success': True, 'data': last_reading, 'timestamp': last_reading.get('timestamp')}), 200
 
