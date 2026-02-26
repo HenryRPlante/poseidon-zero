@@ -78,6 +78,8 @@ With this JSON:
 npm start
 ```
 
+Note: `npm start` now auto-detects and switches to the Node version in `.nvmrc` (20.19.0) before running Ionic serve.
+
 Open `http://localhost:4200` and view:
 - **Tab 1** - Live sensor readings
 - **Tab 2** - Historical data

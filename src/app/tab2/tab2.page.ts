@@ -120,7 +120,7 @@ export class Tab2Page implements OnInit, OnDestroy {
   }
 
   exportTrialData(trial: HistoricalData) {
-    const csvContent = this.convertTrialToCSV(trial);
+    const csvContent = this.convertReadingsToCSV(trial.readings);
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
@@ -129,10 +129,37 @@ export class Tab2Page implements OnInit, OnDestroy {
     link.click();
   }
 
-  private convertTrialToCSV(trial: HistoricalData): string {
+  exportLastTenMinutesData() {
+    const lastTenMinutesReadings = this.getLastTenMinutesReadings();
+    if (lastTenMinutesReadings.length === 0) {
+      return;
+    }
+
+    const csvContent = this.convertReadingsToCSV(lastTenMinutesReadings);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `last_10_minutes_${Date.now()}.csv`);
+    link.click();
+  }
+
+  get lastTenMinutesReadingsCount(): number {
+    return this.getLastTenMinutesReadings().length;
+  }
+
+  private getLastTenMinutesReadings(): SensorReading[] {
+    const tenMinutesAgo = Date.now() - (10 * 60 * 1000);
+    return this.readingsHistory.filter(reading => {
+      const readingTime = new Date(reading.timestamp).getTime();
+      return !Number.isNaN(readingTime) && readingTime >= tenMinutesAgo;
+    });
+  }
+
+  private convertReadingsToCSV(readings: SensorReading[]): string {
     let csv = 'Timestamp,TDS (ppm),Temperature (°C),EC (mS/cm),pH,Signal,Battery\n';
     
-    trial.readings.forEach(reading => {
+    readings.forEach(reading => {
       const row = [
         new Date(reading.timestamp).toISOString(),
         reading.tds,

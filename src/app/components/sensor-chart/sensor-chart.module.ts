@@ -7,9 +7,9 @@ import { SensorChartComponent } from './sensor-chart.component';
 @NgModule({
   imports: [
     CommonModule,
-    NgChartsModule
+    NgChartsModule,
+    SensorChartComponent
   ],
-  declarations: [SensorChartComponent],
   exports: [SensorChartComponent]
 })
 export class SensorChartModule { }

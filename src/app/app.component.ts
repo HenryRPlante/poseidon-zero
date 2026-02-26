@@ -17,7 +17,7 @@ export class AppComponent implements OnInit {
       {
         id: 'local-arduino',
         name: 'Local Arduino',
-        ipAddress: 'psychic-cod-695rx5696pqqf4p5r-5000.app.github.dev',
+        ipAddress: 'redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev',
         port: 443,
         location: {
           latitude: 41.40338,

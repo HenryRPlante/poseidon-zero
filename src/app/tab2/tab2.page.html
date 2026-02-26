@@ -67,6 +67,11 @@
     </ion-card-header>
 
     <ion-card-content>
+      <ion-button expand="block" (click)="exportLastTenMinutesData()" [disabled]="lastTenMinutesReadingsCount === 0">
+        <ion-icon name="download"></ion-icon>
+        Export Last 10 Minutes (CSV)
+      </ion-button>
+
       <ion-list>
         <ion-item *ngFor="let reading of readingsHistory.slice(-5)">
           <ion-label>
