@@ -10,16 +10,105 @@ import requests
 import time
 import sys
 import re
+import os
+from urllib.parse import urlparse
 from datetime import datetime, timezone
-from pathlib import Path
 
-FLASK_URL = "https://psychic-cod-695rx5696pqqf4p5r-5000.app.github.dev/api/sensors"
+DEFAULT_SCHEME = os.getenv("FLASK_SCHEME", "http")
+DEFAULT_HOST = os.getenv("FLASK_HOST", "localhost")
+DEFAULT_PORT = os.getenv("FLASK_PORT", "5000")
+DEFAULT_PATH = os.getenv("FLASK_PATH", "/api/sensors")
+DEFAULT_HEALTH_PATH = os.getenv("FLASK_HEALTH_PATH", "/api/sensors/last")
+FIXED_CODESPACE_FLASK_URL = "https://redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev/api/sensors"
+
+if not DEFAULT_PATH.startswith("/"):
+    DEFAULT_PATH = f"/{DEFAULT_PATH}"
+
+if not DEFAULT_HEALTH_PATH.startswith("/"):
+    DEFAULT_HEALTH_PATH = f"/{DEFAULT_HEALTH_PATH}"
+
+
+def _build_url(base: str, path: str) -> str:
+    base = base.strip().rstrip("/")
+    if not path.startswith("/"):
+        path = f"/{path}"
+    return f"{base}{path}"
+
+
+def _candidate_urls():
+    candidates = []
+
+    candidates.append(FIXED_CODESPACE_FLASK_URL)
+
+    explicit_url = os.getenv("FLASK_URL", "").strip()
+    if explicit_url:
+        candidates.append(explicit_url)
+
+    explicit_host = os.getenv("FLASK_HOST", "").strip()
+    if explicit_host:
+        candidates.append(f"{DEFAULT_SCHEME}://{explicit_host}:{DEFAULT_PORT}{DEFAULT_PATH}")
+
+    for env_name in ("IONIC_URL", "APP_URL", "PUBLIC_APP_URL"):
+        app_url = os.getenv(env_name, "").strip()
+        if not app_url:
+            continue
+        parsed = urlparse(app_url)
+        if not parsed.scheme or not parsed.netloc:
+            continue
+        host = parsed.netloc
+        if "-810" in host:
+            host = host.replace("-8101", "-5000").replace("-8100", "-5000")
+            candidates.append(_build_url(f"{parsed.scheme}://{host}", DEFAULT_PATH))
+
+    codespace = os.getenv("CODESPACE_NAME", "").strip()
+    domain = os.getenv("GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN", "").strip()
+    if codespace and domain:
+        candidates.append(f"https://{codespace}-5000.{domain}{DEFAULT_PATH}")
+    if codespace:
+        candidates.append(f"https://{codespace}-5000.app.github.dev{DEFAULT_PATH}")
+
+    candidates.extend([
+        f"http://localhost:{DEFAULT_PORT}{DEFAULT_PATH}",
+        f"http://127.0.0.1:{DEFAULT_PORT}{DEFAULT_PATH}",
+        f"http://host.docker.internal:{DEFAULT_PORT}{DEFAULT_PATH}"
+    ])
+
+    deduped = []
+    seen = set()
+    for url in candidates:
+        normalized = url.strip().rstrip("/")
+        if not normalized or normalized in seen:
+            continue
+        seen.add(normalized)
+        deduped.append(normalized)
+    return deduped
+
+
+def _probe_url(post_url: str) -> bool:
+    try:
+        parsed = urlparse(post_url)
+        if not parsed.scheme or not parsed.netloc:
+            return False
+        health_url = _build_url(f"{parsed.scheme}://{parsed.netloc}", DEFAULT_HEALTH_PATH)
+        response = requests.get(health_url, timeout=1.5)
+        return response.status_code in (200, 204)
+    except requests.RequestException:
+        return False
+
+
+def _resolve_flask_url() -> str:
+    for candidate in _candidate_urls():
+        if _probe_url(candidate):
+            return candidate
+    return f"http://{DEFAULT_HOST}:{DEFAULT_PORT}{DEFAULT_PATH}"
+
+FLASK_URL = _resolve_flask_url()
 BAUD_RATE = 9600
 
 print("\n" + "="*70)
 print("Arduino → Ionic Bridge (Automatic)")
 print("="*70)
-print(f"Flask Server: {FLASK_URL}")
+print(f"Flask Server (auto): {FLASK_URL}")
 print(f"Baud Rate: {BAUD_RATE}")
 print("="*70 + "\n")
 
@@ -138,7 +227,8 @@ try:
             # Check for connection issues
             if failed_count > 5:
                 print("❌ Too many failed sends. Is Flask running?")
-                print(f"   Check: http://localhost:5000/api/sensors/last")
+                print(f"   Check: {DEFAULT_HEALTH_PATH}")
+                print("   Tip: set FLASK_URL if auto-detect picked the wrong endpoint")
                 failed_count = 0
         
         except UnicodeDecodeError:

@@ -22,6 +22,16 @@ echo Installing required packages...
 pip install -q pyserial requests
 
 echo.
+set "FLASK_URL=https://redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev/api/sensors"
+set /p IONIC_URL_INPUT=Paste your Ionic URL (optional, e.g. https://<name>-8101.app.github.dev): 
+
+if not "%IONIC_URL_INPUT%"=="" (
+    for /f "usebackq delims=" %%i in (`powershell -NoProfile -Command "$u=$env:IONIC_URL_INPUT.Trim(); if(-not $u){ exit 1 }; if($u -notmatch '^https?://'){ $u='https://'+$u }; $uri=[uri]$u; $host=$uri.Host -replace '-8101','-5000' -replace '-8100','-5000'; Write-Output ($uri.Scheme + '://' + $host + '/api/sensors')"`) do set "FLASK_URL=%%i"
+)
+
+echo Using Flask endpoint: %FLASK_URL%
+
+echo.
 echo Starting Arduino reader...
 echo.
 
