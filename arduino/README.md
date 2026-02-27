@@ -2,10 +2,10 @@
 
 ## Overview
 This folder contains the Arduino sketch (`poseidon_sensors.ino`) for the water quality monitoring system. The sketch:
-- Detects USB connection automatically
+- Runs autonomously for battery-powered deployments
 - Reads pH, TDS, EC, and temperature sensors
-- Outputs data in both formatted and JSON formats
-- Handles serial commands for control
+- Sends JSON directly to your Flask server via SIM7000 LTE modem
+- Keeps optional serial commands for diagnostics
 
 ## Hardware Requirements
 
@@ -38,6 +38,8 @@ In Arduino IDE, go to **Sketch → Include Library → Manage Libraries** and in
 1. `DFRobot_PH` by DFRobot (for pH sensor)
 2. `OneWire` by Paul Stoffregen
 3. `DallasTemperature` by Miles Burton
+4. `TinyGSM` by Volodymyr Shymanskyy
+5. `ArduinoHttpClient` by Arduino
 
 ### Step 2: Load the Sketch
 1. Open Arduino IDE
@@ -49,7 +51,12 @@ In Arduino IDE, go to **Sketch → Include Library → Manage Libraries** and in
 ### Step 3: Configure Port
 1. Plug in the Arduino board via USB
 2. In Arduino IDE: **Tools → Port** → Select the COM port
-3. The sketch will automatically detect USB connection
+3. Open `poseidon_sensors.ino` and set:
+   - `SERVER_HOST` (public hostname/IP of your Flask server)
+   - `SERVER_PORT` (usually `5000`)
+   - `SERVER_PATH` (default `/api/sensors`)
+   - `APN`, `APN_USER`, `APN_PASS` for your SIM carrier
+   - `BOTLETICS_PROFILE_UNO_NANO` / `BOTLETICS_PROFILE_FEATHER` for your wiring
 
 ### Step 4: Upload
 1. Click the **Upload** button (→ icon) or **Ctrl+U**
@@ -67,10 +74,11 @@ In Arduino IDE, go to **Sketch → Include Library → Manage Libraries** and in
 Type these commands in the Serial Monitor input box:
 
 ```
-start   - Begin sensor readings (outputs every 1 second)
+start   - Begin sensor readings
 stop    - Stop sensor readings
-status  - Show USB connection and running status
+status  - Show modem/network and running status
 info    - Display device information
+reconnect - Force cellular reconnect
 help    - List all available commands
 ```
 
@@ -88,14 +96,17 @@ Columns: Temp(°C) | pH | TDS(ppm) | EC(mS/cm)
 {"temp":25.5,"pH":7.20,"tds":450,"ec":0.865}
 ```
 
-## USB Detection Behavior
+## Cellular Uplink Behavior
 
-The sketch automatically detects USB connection:
+The sketch sends readings directly over LTE using SIM7000:
 
-1. **Plugged In**: Serial port opens, device is ready
-2. **Disconnected**: Serial closes, device goes idle
-3. **Commands Only Work**: When USB is connected
-4. **Auto Start**: Disabled by default (must send "start" command)
+1. Boots modem and registers to network
+2. Connects APN data session
+3. Samples sensors every 30 seconds
+4. POSTs JSON to `http://SERVER_HOST:SERVER_PORT/api/sensors`
+5. Retries failed sends automatically
+
+Note: `SERVER_HOST` must be publicly reachable from cellular networks (localhost will not work from the modem).
 
 ## Pin Configuration
 
@@ -120,6 +131,12 @@ The sketch automatically detects USB connection:
 - Reinstall Arduino board drivers if needed
 - For Mac/Linux, check `/dev/ttyUSB*` or `/dev/ttyACM*`
 
+### Modem Cannot Connect
+- Verify SIM card has active data plan
+- Confirm APN values are correct for your carrier
+- Check antenna connection and coverage
+- Run `status` in Serial Monitor to inspect registration/GPRS state
+
 ### Library Errors
 - In Arduino IDE: **Sketch → Include Library → Manage Libraries**
 - Search for each library and install the latest version
@@ -127,10 +144,10 @@ The sketch automatically detects USB connection:
 
 ## Integration with Poseidon App
 
-This sketch outputs data compatible with the Poseidon Zero app:
-- The app polls `/api/sensors` endpoint (requires WiFi/cellular modem)
-- For now, monitor data via Serial Monitor
-- TODO: Add HTTP server support for future versions
+This sketch sends data to the same Flask endpoint already used by your app:
+- Device POSTs to `/api/sensors`
+- Flask receiver forwards data to the website flow as usual
+- Payload includes `temperature`, `ph`, `tds`, `ec`, and optional `signalStrength`
 
 ## Next Steps
 

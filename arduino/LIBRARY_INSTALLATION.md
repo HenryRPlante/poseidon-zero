@@ -43,6 +43,36 @@
 4. Click **Install** (will auto-install OneWire if needed)
 5. Click **Close**
 
+### 4. TinyGSM Library
+**Publisher**: Volodymyr Shymanskyy  
+**Version**: >= 0.12.x  
+**Installation Path**: Arduino IDE → Sketch → Include Library → Manage Libraries  
+**Search for**: `TinyGSM`  
+**GitHub**: https://github.com/vshymanskyy/TinyGSM
+
+#### Installation Steps:
+1. Open Arduino IDE
+2. Go to **Sketch → Include Library → Manage Libraries**
+3. Type `TinyGSM` in search box
+4. Select **TinyGSM by Volodymyr Shymanskyy**
+5. Click **Install**
+6. Click **Close**
+
+### 5. ArduinoHttpClient Library
+**Publisher**: Arduino  
+**Version**: >= 0.6.x  
+**Installation Path**: Arduino IDE → Sketch → Include Library → Manage Libraries  
+**Search for**: `ArduinoHttpClient`  
+**GitHub**: https://github.com/arduino-libraries/ArduinoHttpClient
+
+#### Installation Steps:
+1. Open Arduino IDE
+2. Go to **Sketch → Include Library → Manage Libraries**
+3. Type `ArduinoHttpClient` in search box
+4. Select **ArduinoHttpClient by Arduino**
+5. Click **Install**
+6. Click **Close**
+
 ---
 
 ## Hardware Wiring Diagram
@@ -126,10 +156,12 @@ Temperature     1-Wire      D7             3.3V-5V*
 
 ### Essential Components
 - [ ] Arduino board (UNO, Nano, or compatible)
-- [ ] USB cable (for programming and power)
+- [ ] USB cable (for programming)
 - [ ] Breadboard or perfboard (optional, for testing)
 - [ ] Jumper wires
 - [ ] 1× 4.7kΩ resistor (for DS18B20 pullup)
+- [ ] Botletics SIM7000 LTE modem
+- [ ] LTE antenna + SIM card with data plan
 
 ### Sensors
 - [ ] pH sensor module with analog output
@@ -203,7 +235,9 @@ After wiring everything:
 1. Gather all components
 2. Install libraries in Arduino IDE
 3. Wire sensors to Arduino (use diagram above)
-4. Upload `poseidon_sensors.ino`
-5. Open Serial Monitor and test with `start` command
-6. Check [README.md](README.md) for full documentation
+4. Wire and power SIM7000 modem (per Botletics guide)
+5. Set APN + server constants in `poseidon_sensors.ino`
+6. Upload `poseidon_sensors.ino`
+7. Open Serial Monitor and test with `status` command
+8. Check [README.md](README.md) for full documentation
 
