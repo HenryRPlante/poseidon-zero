@@ -29,7 +29,8 @@
   <!-- Live Sensor Trends - Line Charts Only -->
   <ion-card>
     <ion-card-header>
-      <ion-card-title>Live Sensor Trends (Last 60 Seconds)</ion-card-title>
+      <ion-card-title>Sensor Trends</ion-card-title>
+      <ion-card-subtitle *ngIf="chartReadingsHistory.length > 0">Showing {{ chartReadingsHistory.length }} readings</ion-card-subtitle>
     </ion-card-header>
   </ion-card>
 
@@ -61,20 +62,6 @@
     </ion-card-content>
   </ion-card>
 
-  <!-- EC Chart - Full Row -->
-  <ion-card>
-    <ion-card-header>
-      <ion-card-title>Electrical Conductivity (EC)</ion-card-title>
-    </ion-card-header>
-    <ion-card-content>
-      <app-sensor-chart 
-        [readings]="chartReadingsHistory"
-        [chartType]="'ec'"
-        [showOptimalRange]="true">
-      </app-sensor-chart>
-    </ion-card-content>
-  </ion-card>
-
   <!-- pH Chart - Full Row -->
   <ion-card>
     <ion-card-header>
@@ -84,6 +71,20 @@
       <app-sensor-chart 
         [readings]="chartReadingsHistory"
         [chartType]="'ph'"
+        [showOptimalRange]="true">
+      </app-sensor-chart>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- EC Chart - Full Row -->
+  <ion-card>
+    <ion-card-header>
+      <ion-card-title>EC (Electrical Conductivity)</ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <app-sensor-chart 
+        [readings]="chartReadingsHistory"
+        [chartType]="'ec'"
         [showOptimalRange]="true">
       </app-sensor-chart>
     </ion-card-content>

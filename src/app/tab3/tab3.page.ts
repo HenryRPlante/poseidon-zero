@@ -1,8 +1,8 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { SensorDataService } from '../services/sensor-data.service';
 import { SensorReading, HistoricalData, SensorDevice } from '../models/sensor-data.model';
-import { Subject, interval } from 'rxjs';
-import { takeUntil, switchMap } from 'rxjs/operators';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tab3',
@@ -16,7 +16,6 @@ export class Tab3Page implements OnInit, OnDestroy {
   showOptimalRanges = {
     temperature: true,
     tds: true,
-    ec: true,
     ph: true
   };
 
@@ -32,8 +31,8 @@ export class Tab3Page implements OnInit, OnDestroy {
   // Statistics
   avgTemperature: number | null = null;
   avgTds: number | null = null;
-  avgEc: number | null = null;
   avgPh: number | null = null;
+  avgEc: number | null = null;
   
   minTemperature: number | null = null;
   maxTemperature: number | null = null;
@@ -44,11 +43,14 @@ export class Tab3Page implements OnInit, OnDestroy {
   minPh: number | null = null;
   maxPh: number | null = null;
 
+  minEc: number | null = null;
+  maxEc: number | null = null;
+
   private destroy$ = new Subject<void>();
-  private pollingActive = false;
   private lastChartUpdate = 0;
   private chartUpdateInterval = 5000; // Update chart every 5 seconds
   private readonly CHART_WINDOW_MS = 60000; // 60 seconds rolling window
+  private lastReadingsCount = 0;
 
   get sensorDetectionText(): string {
     if (this.devices.length === 0) {
@@ -60,14 +62,29 @@ export class Tab3Page implements OnInit, OnDestroy {
   constructor(private sensorDataService: SensorDataService) {}
 
   ngOnInit() {
-    // Subscribe to devices and start independent polling
+    // Subscribe to global readings history stream
+    this.sensorDataService.readingsHistory$
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(readings => {
+        this.readingsHistory = readings;
+        this.calculateStatistics(readings);
+        
+        // Update chart every 5 seconds OR when data is imported (significant change in count)
+        const now = Date.now();
+        const readingsCountChanged = Math.abs(readings.length - this.lastReadingsCount) > 5;
+        
+        if (now - this.lastChartUpdate >= this.chartUpdateInterval || readingsCountChanged) {
+          this.updateChartData();
+          this.lastChartUpdate = now;
+          this.lastReadingsCount = readings.length;
+        }
+      });
+
+    // Subscribe to devices (for display purposes)
     this.sensorDataService.devices$
       .pipe(takeUntil(this.destroy$))
       .subscribe(devices => {
         this.devices = devices;
-        if (devices.length > 0 && !this.pollingActive) {
-          this.startAutoPolling(devices[0].id);
-        }
       });
 
     // Subscribe to trial data
@@ -78,41 +95,25 @@ export class Tab3Page implements OnInit, OnDestroy {
       });
   }
 
-  private startAutoPolling(deviceId: string) {
-    if (this.pollingActive) return;
-    this.pollingActive = true;
-
-    // Poll every 2 seconds
-    interval(2000)
-      .pipe(
-        switchMap(() => this.sensorDataService.fetchSensorData(deviceId)),
-        takeUntil(this.destroy$)
-      )
-      .subscribe({
-        next: (reading) => {
-          this.readingsHistory.push(reading);
-          this.calculateStatistics(this.readingsHistory);
-          
-          // Update chart every 5 seconds based on time
-          const now = Date.now();
-          if (now - this.lastChartUpdate >= this.chartUpdateInterval) {
-            this.updateChartData();
-            this.lastChartUpdate = now;
-          }
-        },
-        error: (error) => {
-          console.error('Error polling Tab3 data:', error);
-        }
-      });
-  }
-
   private updateChartData() {
-    // Remove readings older than 60 seconds
+    // For imported or historical data, show all readings
+    // For live streaming data, show rolling 60-second window
     const cutoffTime = Date.now() - this.CHART_WINDOW_MS;
-    this.chartReadingsHistory = this.readingsHistory.filter(r => {
+    const recentReadings = this.readingsHistory.filter(r => {
       const readingTime = new Date(r.timestamp).getTime();
       return readingTime >= cutoffTime;
     });
+    
+    // If we have recent data (within last 60 seconds), use rolling window
+    // Otherwise, show all available data (for imported historical data)
+    if (recentReadings.length > 0) {
+      this.chartReadingsHistory = recentReadings;
+    } else if (this.readingsHistory.length > 0) {
+      // Show all imported data (up to last 100 readings for performance)
+      this.chartReadingsHistory = this.readingsHistory.slice(-100);
+    } else {
+      this.chartReadingsHistory = [];
+    }
   }
 
   ngOnDestroy() {
@@ -148,15 +149,17 @@ export class Tab3Page implements OnInit, OnDestroy {
     this.minTds = Math.min(...tdsList);
     this.maxTds = Math.max(...tdsList);
 
-    // EC statistics
-    const ecList = readings.map(r => r.ec);
-    this.avgEc = this.calculateAverage(ecList);
-
     // pH statistics
     const phList = readings.map(r => r.ph);
     this.avgPh = this.calculateAverage(phList);
     this.minPh = Math.min(...phList);
     this.maxPh = Math.max(...phList);
+
+    // EC statistics
+    const ecList = readings.map(r => r.ec);
+    this.avgEc = this.calculateAverage(ecList);
+    this.minEc = Math.min(...ecList);
+    this.maxEc = Math.max(...ecList);
 
     // regression analysis removed per request
   }
@@ -164,14 +167,16 @@ export class Tab3Page implements OnInit, OnDestroy {
   private clearStatistics() {
     this.avgTemperature = null;
     this.avgTds = null;
-    this.avgEc = null;
     this.avgPh = null;
+    this.avgEc = null;
     this.minTemperature = null;
     this.maxTemperature = null;
     this.minTds = null;
     this.maxTds = null;
     this.minPh = null;
     this.maxPh = null;
+    this.minEc = null;
+    this.maxEc = null;
   }
 
   // regression helper removed
@@ -229,9 +234,6 @@ TDS (Total Dissolved Solids) Analysis:
 - Average: ${this.formatStat(this.avgTds, ' ppm')}
 - Min: ${this.formatStat(this.minTds, ' ppm')}
 - Max: ${this.formatStat(this.maxTds, ' ppm')}
-
-EC (Electrical Conductivity) Analysis:
-- Average: ${this.formatStat(this.avgEc, ' mS/cm')}
 
 pH Level Analysis:
 - Average: ${this.formatStat(this.avgPh)}

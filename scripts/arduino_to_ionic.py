@@ -11,6 +11,7 @@ import time
 import sys
 import re
 import os
+import random
 from urllib.parse import urlparse
 from datetime import datetime, timezone
 
@@ -19,7 +20,7 @@ DEFAULT_HOST = os.getenv("FLASK_HOST", "localhost")
 DEFAULT_PORT = os.getenv("FLASK_PORT", "5000")
 DEFAULT_PATH = os.getenv("FLASK_PATH", "/api/sensors")
 DEFAULT_HEALTH_PATH = os.getenv("FLASK_HEALTH_PATH", "/api/sensors/last")
-FIXED_CODESPACE_FLASK_URL = "https://redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev/api/sensors"
+FIXED_CODESPACE_FLASK_URL = "https://organic-cod-r46r56949rvjf5qwx-5000.app.github.dev/api/sensors"
 
 if not DEFAULT_PATH.startswith("/"):
     DEFAULT_PATH = f"/{DEFAULT_PATH}"
@@ -105,6 +106,15 @@ def _resolve_flask_url() -> str:
 FLASK_URL = _resolve_flask_url()
 BAUD_RATE = 9600
 
+# Fake EC data for broken sensor - room temperature water baseline
+FAKE_EC_BASELINE = 0.400  # mS/cm (~400 µS/cm, typical tap water)
+FAKE_EC_VARIATION = 0.015  # Small random variation
+
+def generate_fake_ec():
+    """Generate fake EC value for broken sensor - simulates room temp water"""
+    variation = random.uniform(-FAKE_EC_VARIATION, FAKE_EC_VARIATION)
+    return round(FAKE_EC_BASELINE + variation, 3)
+
 print("\n" + "="*70)
 print("Arduino → Ionic Bridge (Automatic)")
 print("="*70)
@@ -173,8 +183,8 @@ try:
             if line.startswith('['):
                 continue
             
-            # Parse Arduino format: "Temp: 8.19 °C  |  pH: -1.30  |  TDS: 0 ppm  |  EC: 0.000 mS/cm"
-            # Or format: "25.5 | 7.20 | 450 | 0.865"
+            # Parse Arduino format: "Temp: 8.19 °C  |  pH: -1.30  |  TDS: 0 ppm"
+            # Or format: "25.5 | 7.20 | 450"
             try:
                 # Try parsing with labels first
                 if "Temp:" in line and "pH:" in line:
@@ -182,24 +192,24 @@ try:
                     temp_match = re.search(r'Temp:\s*([-\d.]+)', line)
                     ph_match = re.search(r'pH:\s*([-\d.]+)', line)
                     tds_match = re.search(r'TDS:\s*([-\d.]+)', line)
-                    ec_match = re.search(r'EC:\s*([-\d.]+)', line)
                     
-                    if all([temp_match, ph_match, tds_match, ec_match]):
+                    if all([temp_match, ph_match, tds_match]):
                         temperature = float(temp_match.group(1))
                         ph = float(ph_match.group(1))
                         tds = float(tds_match.group(1))
-                        ec = float(ec_match.group(1))
                     else:
                         continue
                 else:
-                    # Try parsing simple pipe format: "25.5 | 7.20 | 450 | 0.865"
+                    # Try parsing simple pipe format: "25.5 | 7.20 | 450"
                     parts = [p.strip() for p in line.split('|')]
-                    if len(parts) != 4:
+                    if len(parts) != 3:
                         continue
                     temperature = float(parts[0])
                     ph = float(parts[1])
                     tds = float(parts[2].split()[0])  # Remove "ppm" if present
-                    ec = float(parts[3].split()[0])   # Remove "mS/cm" if present
+                
+                # Generate fake EC since sensor is broken
+                fake_ec = generate_fake_ec()
                 
                 # Send to Flask
                 payload = {
@@ -207,7 +217,7 @@ try:
                         "temperature": round(temperature, 1),
                         "ph": round(ph, 2),
                         "tds": round(tds, 0),
-                        "ec": round(ec, 3),
+                        "ec": fake_ec,
                         "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
                     }
                 }
@@ -215,7 +225,7 @@ try:
                 response = requests.post(FLASK_URL, json=payload, timeout=3)
                 
                 if response.status_code == 200:
-                    print(f"✓ Temp: {temperature:6.1f}°C | pH: {ph:5.2f} | TDS: {tds:5.0f}ppm | EC: {ec:6.3f}mS/cm")
+                    print(f"✓ Temp: {temperature:6.1f}°C | pH: {ph:5.2f} | TDS: {tds:5.0f}ppm | EC: {fake_ec:6.3f}mS/cm (fake)")
                     failed_count = 0
                 else:
                     print(f"⚠ Flask error: {response.status_code}")

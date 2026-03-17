@@ -35,7 +35,7 @@ export class SensorInitializationExample {
         name: 'Barcelona Harbor - Main Station'
       },
       lastSync: new Date(),
-      status: 'offline'
+      status: 'online'
     };
 
     this.sensorDataService.initializeDevices([device]);
@@ -45,7 +45,6 @@ export class SensorInitializationExample {
       next: (reading) => {
         console.log('Temperature:', reading.temperature + '°C');
         console.log('TDS:', reading.tds + ' ppm');
-        console.log('EC:', reading.ec + ' mS/cm');
         console.log('pH:', reading.ph);
       },
       error: (error) => {
@@ -71,7 +70,7 @@ export class SensorInitializationExample {
           name: 'Barcelona Harbor - Entrance'
         },
         lastSync: new Date(),
-        status: 'offline'
+        status: 'online'
       },
       {
         id: 'arduino-buoy-02',
@@ -84,7 +83,7 @@ export class SensorInitializationExample {
           name: 'Barcelona Harbor - Center'
         },
         lastSync: new Date(),
-        status: 'offline'
+        status: 'online'
       },
       {
         id: 'arduino-buoy-03',
@@ -97,7 +96,7 @@ export class SensorInitializationExample {
           name: 'Barcelona Harbor - Deep Water'
         },
         lastSync: new Date(),
-        status: 'offline'
+        status: 'online'
       }
     ];
 
@@ -132,7 +131,7 @@ export class SensorInitializationExample {
         name: name
       },
       lastSync: new Date(),
-      status: 'offline'
+      status: 'online'
     };
 
     this.sensorDataService.addDevice(newDevice);
@@ -230,11 +229,6 @@ export class SensorInitializationExample {
       if (reading.temperature > 30 || reading.temperature < 10) {
         console.warn(`⚠ Alert: Temperature ${reading.temperature}°C is out of range`);
       }
-
-      // EC threshold check (normal range typically 0.5-2.0 mS/cm for freshwater)
-      if (reading.ec > 2.0) {
-        console.warn(`⚠ Alert: EC level ${reading.ec} mS/cm is elevated`);
-      }
     });
   }
 
@@ -261,9 +255,9 @@ export class SensorInitializationExample {
   }
 
   private generateCSV(trial: any): string {
-    let csv = 'Timestamp,TDS (ppm),Temperature (°C),EC (mS/cm),pH,Signal,Battery\n';
+    let csv = 'Timestamp,TDS (ppm),Temperature (°C),pH,Battery\n';
     trial.readings.forEach((reading: any) => {
-      csv += `${reading.timestamp},${reading.tds},${reading.temperature},${reading.ec},${reading.ph},${reading.signalStrength},${reading.batteryLevel}\n`;
+      csv += `${reading.timestamp},${reading.tds},${reading.temperature},${reading.ph},${reading.batteryLevel}\n`;
     });
     return csv;
   }
@@ -278,7 +272,6 @@ export class SensorInitializationExample {
       xml += `      <timestamp>${reading.timestamp}</timestamp>\n`;
       xml += `      <tds>${reading.tds}</tds>\n`;
       xml += `      <temperature>${reading.temperature}</temperature>\n`;
-      xml += `      <ec>${reading.ec}</ec>\n`;
       xml += `      <ph>${reading.ph}</ph>\n`;
       xml += '    </reading>\n';
     });
@@ -350,7 +343,7 @@ export class SensorInitializationExample {
  *           name: 'Barcelona Harbor'
  *         },
  *         lastSync: new Date(),
- *         status: 'offline' as const
+ *         status: 'online' as const
  *       }
  *     ];
  * 

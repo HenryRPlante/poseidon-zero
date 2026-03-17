@@ -99,16 +99,15 @@ export class FakeBuoyService {
     // Base values (these would come from real sensors)
     const baseTemp = 22;
     const baseTds = 650;
-    const baseEc = 1.2;
     const basePh = 7.2;
+    const baseEc = 0.400; // mS/cm (room temp water)
 
     return {
       timestamp,
       temperature: baseTemp + (Math.random() - 0.5) * 4, // ±2°C variation
       tds: baseTds + (Math.random() - 0.5) * 200, // ±100 ppm variation
-      ec: baseEc + (Math.random() - 0.5) * 0.4, // ±0.2 mS/cm variation
       ph: basePh + (Math.random() - 0.5) * 0.6, // ±0.3 pH variation
-      signalStrength: -75 + Math.random() * 20, // -75 to -55 dBm
+      ec: baseEc + (Math.random() - 0.5) * 0.03, // ±0.015 mS/cm variation
       batteryLevel: 85 + Math.random() * 10 // 85-95%
     };
   }

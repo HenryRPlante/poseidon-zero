@@ -22,7 +22,7 @@ echo Installing required packages...
 pip install -q pyserial requests
 
 echo.
-set "FLASK_URL=https://redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev/api/sensors"
+set "FLASK_URL=https://organic-cod-r46r56949rvjf5qwx-5000.app.github.dev/api/sensors"
 set /p IONIC_URL_INPUT=Paste your Ionic URL (optional, e.g. https://<name>-8101.app.github.dev): 
 
 if not "%IONIC_URL_INPUT%"=="" (

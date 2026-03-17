@@ -126,7 +126,7 @@ export class AppComponent implements OnInit {
           name: 'Harbor Station'
         },
         lastSync: new Date(),
-        status: 'offline' as const
+        status: 'online' as const
       }
     ];
 

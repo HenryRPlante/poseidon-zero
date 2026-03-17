@@ -26,10 +26,7 @@ SENSOR_KEYS = {
     'ph',
     'temperature',
     'tds',
-    'ec',
-    'turbidity',
     'salinity',
-    'signalStrength',
     'batteryLevel'
 }
 

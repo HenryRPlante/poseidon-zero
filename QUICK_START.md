@@ -35,7 +35,7 @@ export class AppComponent implements OnInit {
           name: 'Your Location'
         },
         lastSync: new Date(),
-        status: 'offline'
+        status: 'online'
       }
     ]);
     

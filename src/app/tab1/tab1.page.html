@@ -47,11 +47,6 @@
       </ion-item>
 
       <ion-item>
-        <ion-label>Signal</ion-label>
-        <ion-badge color="primary">{{ signal !== null ? ((signal | number: '1.2-2') + ' dBm') : '---' }}</ion-badge>
-      </ion-item>
-
-      <ion-item>
         <ion-label>Location</ion-label>
         <ion-text>
           {{ latitude }}, {{ longitude }}
@@ -62,36 +57,6 @@
         <ion-spinner *ngIf="isLoading" name="crescent"></ion-spinner>
         {{ isLoading ? 'Loading...' : 'Refresh' }}
       </ion-button>
-    </ion-card-content>
-  </ion-card>
-
-  <!-- Current Sensor Readings -->
-  <ion-card *ngIf="currentReading">
-    <ion-card-header>
-      <ion-card-title>Current Sensor Readings</ion-card-title>
-      <ion-card-subtitle>{{ currentReading.timestamp | date: 'short' }}</ion-card-subtitle>
-    </ion-card-header>
-
-    <ion-card-content>
-      <ion-item>
-        <ion-label>TDS (Total Dissolved Solids)</ion-label>
-        <ion-note slot="end">{{ currentReading.tds }} ppm</ion-note>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>Water Temperature</ion-label>
-        <ion-note slot="end">{{ currentReading.temperature }}°C</ion-note>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>EC (Electrical Conductivity)</ion-label>
-        <ion-note slot="end">{{ currentReading.ec }} mS/cm</ion-note>
-      </ion-item>
-
-      <ion-item>
-        <ion-label>pH Level</ion-label>
-        <ion-note slot="end">{{ currentReading.ph }}</ion-note>
-      </ion-item>
     </ion-card-content>
   </ion-card>
 

@@ -202,7 +202,6 @@ export class ChartService {
     // Normalize values to 0-100 scale for comparison
     const normalizeTemperature = (t: number) => (t / 50) * 100; // Assuming max ~50°C
     const normalizeTds = (t: number) => Math.min((t / 1000) * 100, 100); // Assuming max ~1000 ppm
-    const normalizeEc = (e: number) => (e / 5) * 100; // Assuming max ~5 mS/cm
     const normalizePh = (p: number) => (p / 14) * 100; // Assuming max 14
 
     return {
@@ -229,16 +228,6 @@ export class ChartService {
             tension: 0.4,
             pointRadius: 3,
             pointBackgroundColor: '#4ecdc4'
-          },
-          {
-            label: 'EC (%)',
-            data: readings.map(r => normalizeEc(r.ec)),
-            borderColor: '#ffe66d',
-            backgroundColor: 'rgba(255, 230, 109, 0.05)',
-            borderWidth: 2,
-            tension: 0.4,
-            pointRadius: 3,
-            pointBackgroundColor: '#ffe66d'
           },
           {
             label: 'pH (%)',
@@ -359,15 +348,15 @@ export class ChartService {
   }
 
   /**
-   * Generate EC trend chart configuration
+   * Generate EC (Electrical Conductivity) trend chart configuration
    */
   getEcChartConfig(readings: SensorReading[], showOptimalRange: boolean = true): ChartConfiguration {
     const timestamps = this.formatTimestampsForWindow(readings);
     const ecValues = readings.map(r => r.ec);
 
     // Calculate dynamic Y-axis max with 15% padding
-    const ecMax = ecValues.length > 0 ? Math.max(...ecValues) : 2.5;
-    const yAxisMax = Math.ceil(ecMax * 1.15 * 100) / 100; // 15% padding, round to 2 decimals
+    const ecMax = ecValues.length > 0 ? Math.max(...ecValues) : 2.0;
+    const yAxisMax = Math.ceil(ecMax * 115) / 100; // 15% padding
 
     const config: any = {
       type: 'line',
@@ -377,14 +366,14 @@ export class ChartService {
           {
             label: 'EC (mS/cm)',
             data: ecValues,
-            borderColor: '#ffe66d',
-            backgroundColor: 'rgba(255, 230, 109, 0.1)',
+            borderColor: '#f8b500',
+            backgroundColor: 'rgba(248, 181, 0, 0.1)',
             borderWidth: 2,
             fill: true,
             tension: 0.4,
             pointRadius: 3,
             pointHoverRadius: 5,
-            pointBackgroundColor: '#ffe66d',
+            pointBackgroundColor: '#f8b500',
             pointBorderColor: '#fff',
             pointBorderWidth: 1
           }
@@ -406,6 +395,7 @@ export class ChartService {
         },
         scales: {
           y: {
+            beginAtZero: true,
             min: 0,
             max: yAxisMax,
             title: {
@@ -424,7 +414,8 @@ export class ChartService {
     };
 
     if (showOptimalRange) {
-      config.plugins = [this.createOptimalRangePlugin(1.0, 2.0)];
+      // Optimal range for typical freshwater: 0.15 - 0.80 mS/cm
+      config.plugins = [this.createOptimalRangePlugin(0.15, 0.80)];
     }
 
     return config;
@@ -433,7 +424,7 @@ export class ChartService {
   /**
    * Generate radar chart for sensor comparison
    */
-  getRadarChartConfig(reading: SensorReading | null, maxValues?: { temperature: number, tds: number, ec: number, ph: number }): ChartConfiguration {
+  getRadarChartConfig(reading: SensorReading | null, maxValues?: { temperature: number, tds: number, ph: number }): ChartConfiguration {
     if (!reading) {
       throw new Error('No sensor reading available for radar chart');
     }
@@ -441,22 +432,19 @@ export class ChartService {
     // Use provided max values or defaults
     const tempMax = maxValues?.temperature || 50;
     const tdsMax = maxValues?.tds || 1000;
-    const ecMax = maxValues?.ec || 5;
     const phMax = maxValues?.ph || 14;
 
     return {
       type: 'radar',
       data: {
-        labels: ['Temperature', 'TDS', 'EC', 'pH', 'Signal', 'Battery'],
+        labels: ['Temperature', 'TDS', 'pH', 'Battery'],
         datasets: [
           {
             label: 'Current Reading',
             data: [
               (reading.temperature / tempMax) * 100,
               Math.min((reading.tds / tdsMax) * 100, 100),
-              (reading.ec / ecMax) * 100,
               (reading.ph / phMax) * 100,
-              Math.abs(reading.signalStrength) * 100 / 120,
               reading.batteryLevel
             ],
             borderColor: '#667eea',
@@ -476,9 +464,7 @@ export class ChartService {
             const displayValues = [
               `${reading.temperature}°C`,
               `${reading.tds} ppm`,
-              `${reading.ec} mS/cm`,
               `${reading.ph}`,
-              `${reading.signalStrength} dBm`,
               `${reading.batteryLevel}%`
             ];
 

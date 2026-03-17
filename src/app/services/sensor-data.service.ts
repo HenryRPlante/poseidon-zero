@@ -24,6 +24,10 @@ export class SensorDataService {
   // Configuration
   private pollingInterval = 300000; // Poll every 5 minutes
   private maxHistoricalReadings = 100;
+  
+  // Global polling control
+  private globalPollingActive = false;
+  private globalPollingSubscription: any = null;
 
   constructor(private http: HttpClient) {
     this.initializeStorageFromLocalStorage();
@@ -36,6 +40,47 @@ export class SensorDataService {
   public initializeDevices(devices: SensorDevice[]): void {
     this.devicesSubject.next(devices);
     this.saveDevicesToLocalStorage(devices);
+    
+    // Start global polling automatically for the first device
+    if (devices.length > 0 && !this.globalPollingActive) {
+      this.startGlobalPolling(devices[0].id);
+    }
+  }
+
+  /**
+   * Start global polling that runs regardless of which tab is active
+   * This ensures data is available immediately when tabs 2 and 3 are visited
+   */
+  private startGlobalPolling(deviceId: string): void {
+    if (this.globalPollingActive) return;
+    this.globalPollingActive = true;
+
+    // Poll every 2 seconds
+    this.globalPollingSubscription = interval(2000)
+      .pipe(
+        switchMap(() => this.fetchSensorData(deviceId)),
+        catchError(error => {
+          console.error('Error in global polling:', error);
+          return of();
+        })
+      )
+      .subscribe((reading: SensorReading) => {
+        if (reading) {
+          this.currentReadingSubject.next(reading);
+          this.addToReadingsHistory(reading);
+        }
+      });
+  }
+
+  /**
+   * Stop global polling (for cleanup)
+   */
+  public stopGlobalPolling(): void {
+    if (this.globalPollingSubscription) {
+      this.globalPollingSubscription.unsubscribe();
+      this.globalPollingSubscription = null;
+      this.globalPollingActive = false;
+    }
   }
 
   /**
@@ -210,6 +255,33 @@ export class SensorDataService {
   public clearReadingsHistory(): void {
     this.readingsHistorySubject.next([]);
     localStorage.removeItem('sensorReadingsHistory');
+  }
+
+  /**
+   * Add imported readings to history (for bulk import from files)
+   */
+  public addImportedReadings(readings: SensorReading[]): void {
+    const history = this.readingsHistorySubject.value;
+    
+    // Add all imported readings
+    history.push(...readings);
+
+    // Sort by timestamp to maintain chronological order
+    history.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+
+    // Keep only the most recent readings if we exceed the limit
+    while (history.length > this.maxHistoricalReadings) {
+      history.shift();
+    }
+
+    this.readingsHistorySubject.next([...history]);
+    this.saveReadingsToLocalStorage(history);
+
+    // Update current reading to the latest one
+    if (readings.length > 0) {
+      const latestReading = readings[readings.length - 1];
+      this.currentReadingSubject.next(latestReading);
+    }
   }
 
   /**

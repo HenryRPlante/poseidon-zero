@@ -17,17 +17,20 @@ export class AppComponent implements OnInit {
       {
         id: 'local-arduino',
         name: 'Local Arduino',
-        ipAddress: 'redesigned-adventure-5gr47r6g64w63pp74-5000.app.github.dev',
+        ipAddress: 'organic-cod-r46r56949rvjf5qwx-5000.app.github.dev',
         port: 443,
         location: {
-          latitude: 41.40338,
-          longitude: 2.17403,
+          latitude: 32.783,
+          longitude: -79.938,
           name: 'Development'
         },
         lastSync: new Date(),
         status: 'online'
       }
     ];
+    
+    // Clear all old data to start fresh
+    this.sensorDataService.clearReadingsHistory();
     
     this.sensorDataService.initializeDevices(devices);
   }

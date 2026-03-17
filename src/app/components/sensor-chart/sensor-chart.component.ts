@@ -15,7 +15,7 @@ import { ChartConfiguration } from 'chart.js';
 export class SensorChartComponent implements OnInit {
 
   @Input() readings: SensorReading[] = [];
-  @Input() chartType: 'temperature' | 'tds' | 'ec' | 'ph' | 'multi' | 'radar' = 'temperature';
+  @Input() chartType: 'temperature' | 'tds' | 'ph' | 'ec' | 'multi' | 'radar' = 'temperature';
   @Input() currentReading: SensorReading | null = null;
   @Input() showOptimalRange: boolean = true;
 
@@ -59,11 +59,11 @@ export class SensorChartComponent implements OnInit {
       case 'tds':
         this.chartConfig = this.chartService.getTdsChartConfig(this.readings, this.showOptimalRange);
         break;
-      case 'ec':
-        this.chartConfig = this.chartService.getEcChartConfig(this.readings, this.showOptimalRange);
-        break;
       case 'ph':
         this.chartConfig = this.chartService.getPhChartConfig(this.readings, this.showOptimalRange);
+        break;
+      case 'ec':
+        this.chartConfig = this.chartService.getEcChartConfig(this.readings, this.showOptimalRange);
         break;
       case 'multi':
         this.chartConfig = this.chartService.getMultiSensorChartConfig(this.readings);
@@ -78,20 +78,18 @@ export class SensorChartComponent implements OnInit {
     }
   }
 
-  private calculateMaxValues(): { temperature: number, tds: number, ec: number, ph: number } {
+  private calculateMaxValues(): { temperature: number, tds: number, ph: number } {
     if (this.readings.length === 0) {
-      return { temperature: 50, tds: 1000, ec: 5, ph: 14 };
+      return { temperature: 50, tds: 1000, ph: 14 };
     }
 
     const temperatures = this.readings.map(r => r.temperature);
     const tdsList = this.readings.map(r => r.tds);
-    const ecList = this.readings.map(r => r.ec);
     const phList = this.readings.map(r => r.ph);
 
     return {
       temperature: Math.max(...temperatures) * 1.1, // 10% buffer
       tds: Math.max(...tdsList) * 1.1,
-      ec: Math.max(...ecList) * 1.1,
       ph: Math.max(...phList) * 1.1
     };
   }
@@ -112,11 +110,11 @@ export class SensorChartComponent implements OnInit {
       case 'tds':
         this.chartConfig = this.chartService.getTdsChartConfig(readings, this.showOptimalRange);
         break;
-      case 'ec':
-        this.chartConfig = this.chartService.getEcChartConfig(readings, this.showOptimalRange);
-        break;
       case 'ph':
         this.chartConfig = this.chartService.getPhChartConfig(readings, this.showOptimalRange);
+        break;
+      case 'ec':
+        this.chartConfig = this.chartService.getEcChartConfig(readings, this.showOptimalRange);
         break;
     }
   }

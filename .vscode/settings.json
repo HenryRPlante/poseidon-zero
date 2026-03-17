@@ -1,3 +1,12 @@
 {
-  "typescript.preferences.autoImportFileExcludePatterns": ["@ionic/angular/common", "@ionic/angular/standalone"]
+  "typescript.preferences.autoImportFileExcludePatterns": [
+    "@ionic/angular/common",
+    "@ionic/angular/standalone"
+  ],
+  "chat.tools.terminal.autoApprove": {
+    "/^cd /workspaces/poseidon-zero/server && python3 receiver\\.py$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
 }

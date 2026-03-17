@@ -1,15 +1,14 @@
 /**
  * Sensor Data Models for Arduino-based water quality monitoring
- * Supports TDS, Temperature, EC (Electrical Conductivity), and pH sensors
+ * Supports TDS, Temperature, and pH sensors
  */
 
 export interface SensorReading {
   timestamp: Date;
   tds: number;           // Total Dissolved Solids (ppm)
   temperature: number;   // Water temperature (°C)
-  ec: number;            // Electrical Conductivity (mS/cm)
   ph: number;            // pH level (0-14)
-  signalStrength: number; // Cellular signal strength (dBm)
+  ec: number;            // Electrical Conductivity (mS/cm)
   batteryLevel: number;  // Device battery percentage (0-100)
 }
 

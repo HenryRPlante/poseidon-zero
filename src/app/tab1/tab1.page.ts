@@ -14,7 +14,6 @@ import * as L from 'leaflet';
 export class Tab1Page implements OnInit, OnDestroy {
 
   battery: number | null = null;
-  signal: number | null = null;
   latitude = 0;
   longitude = 0;
   isLoading = false;
@@ -81,7 +80,6 @@ export class Tab1Page implements OnInit, OnDestroy {
         next: (reading) => {
           this.currentReading = reading;
           this.battery = reading.batteryLevel ?? null;
-          this.signal = reading.signalStrength ?? null;
           this.deviceStatus = 'online';
         },
         error: (error) => {
@@ -118,7 +116,6 @@ export class Tab1Page implements OnInit, OnDestroy {
           next: (reading) => {
             this.currentReading = reading;
             this.battery = reading.batteryLevel ?? null;
-            this.signal = reading.signalStrength ?? null;
             this.deviceStatus = 'online';
             this.isLoading = false;
           },

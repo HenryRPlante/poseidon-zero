@@ -16,6 +16,11 @@
     </ion-segment-button>
   </ion-segment>
 
+  <ion-button expand="block" color="warning" (click)="clearAllData()">
+    <ion-icon name="trash"></ion-icon>
+    Clear All Data
+  </ion-button>
+
   <!-- Sensor Data with Optimal Range Bars -->
   <ion-card>
     <ion-card-header>
@@ -34,16 +39,12 @@
           <ion-note slot="end">{{ tds !== null ? ((tds | number: '1.2-2') + ' ppm') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
-          <ion-label>EC (Electrical Conductivity)</ion-label>
-          <ion-note slot="end">{{ ec !== null ? ((ec | number: '1.2-2') + ' mS/cm') : '---' }}</ion-note>
-        </ion-item>
-        <ion-item>
           <ion-label>pH Level</ion-label>
           <ion-note slot="end">{{ ph !== null ? (ph | number: '1.2-2') : '---' }}</ion-note>
         </ion-item>
         <ion-item>
-          <ion-label>Turbidity</ion-label>
-          <ion-note slot="end">{{ turbidity !== null ? ((turbidity | number: '1.2-2') + ' NTU') : '---' }}</ion-note>
+          <ion-label>EC (Electrical Conductivity)</ion-label>
+          <ion-note slot="end">{{ ec !== null ? ((ec | number: '1.3-3') + ' mS/cm') : '---' }}</ion-note>
         </ion-item>
       </ion-list>
     </ion-card-content>
@@ -56,6 +57,12 @@
     </ion-card-header>
     <ion-card-content>
       <p>No sensor data detected yet.</p>
+      
+      <ion-button expand="block" color="secondary" (click)="importData()">
+        <ion-icon name="cloud-upload"></ion-icon>
+        Import Data (TXT)
+      </ion-button>
+      <input type="file" #fileInput style="display: none;" accept=".txt" (change)="onFileSelected($event)" />
     </ion-card-content>
   </ion-card>
 
@@ -67,16 +74,21 @@
     </ion-card-header>
 
     <ion-card-content>
-      <ion-button expand="block" (click)="exportLastTenMinutesData()" [disabled]="lastTenMinutesReadingsCount === 0">
+      <ion-button expand="block" (click)="exportLastFiveMinutesData()" [disabled]="lastFiveMinutesReadingsCount === 0">
         <ion-icon name="download"></ion-icon>
-        Export Last 10 Minutes (CSV)
+        Export Last 5 Minutes (TXT)
+      </ion-button>
+
+      <ion-button expand="block" color="secondary" (click)="importData()">
+        <ion-icon name="cloud-upload"></ion-icon>
+        Import Data (TXT)
       </ion-button>
 
       <ion-list>
         <ion-item *ngFor="let reading of readingsHistory.slice(-5)">
           <ion-label>
             <p>{{ reading.timestamp | date: 'short' }}</p>
-            <p>TDS: {{ reading.tds | number: '1.2-2' }} ppm | Temp: {{ reading.temperature | number: '1.2-2' }}°C | EC: {{ reading.ec | number: '1.2-2' }} mS/cm | pH: {{ reading.ph | number: '1.2-2' }}</p>
+            <p>TDS: {{ reading.tds | number: '1.2-2' }} ppm | Temp: {{ reading.temperature | number: '1.2-2' }}°C | pH: {{ reading.ph | number: '1.2-2' }} | EC: {{ reading.ec | number: '1.3-3' }} mS/cm</p>
           </ion-label>
         </ion-item>
       </ion-list>
@@ -111,6 +123,12 @@
         <ion-icon name="download"></ion-icon>
         Export as CSV
       </ion-button>
+
+      <ion-button expand="block" color="secondary" (click)="importData()">
+        <ion-icon name="cloud-upload"></ion-icon>
+        Import Data (TXT)
+      </ion-button>
+      <input type="file" #fileInputTrial style="display: none;" accept=".txt" (change)="onFileSelected($event)" />
     </ion-card-content>
   </ion-card>
 
